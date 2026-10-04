@@ -1,0 +1,23 @@
+DUMMY REPORT - SYNTHETIC DATA FOR TESTING ONLY. NOT A REAL PERSON.
+
+SAMPLE DIAGNOSTICS PVT LTD
+Patient: Test Patient One      Age/Sex: 42 / M
+Collected: 12/03/2026          Reported: 13/03/2026
+
+LIVER FUNCTION TEST
+Test Name                     Result    Unit      Reference Range
+Bilirubin Total               0.8       mg/dL     0.3 - 1.2
+SGOT (AST)                    38        U/L       < 40
+SGPT (ALT)                    52        U/L       < 41
+Alkaline Phosphatase          96        U/L       44 - 147
+Total Protein                 7.1       g/dL      6.0 - 8.3
+Albumin                       4.3       g/dL      3.5 - 5.2
+
+COMPLETE BLOOD COUNT
+Hemoglobin                    13.4      g/dL      13.0 - 17.0
+Total Leucocyte Count         7,200     /cumm     4000 - 11000
+Platelet Count                2.1       lakh/cumm 1.5 - 4.1
+
+DIABETES
+HbA1c                         5.9       %         4.0 - 5.6
+Fasting Glucose               104       mg/dL     70 - 99

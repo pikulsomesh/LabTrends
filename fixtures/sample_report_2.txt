@@ -1,0 +1,19 @@
+DUMMY REPORT - SYNTHETIC DATA FOR TESTING ONLY. NOT A REAL PERSON.
+(Different lab format and different test names, same patient, six months later.)
+
+EXAMPLE PATH LABS
+Name : Test Patient One        Date : 09-09-2026
+
+LIVER PROFILE
+ALT / SGPT ........ 47 IU/L (Ref: 7 - 40)
+AST / SGOT ........ 35 IU/L (Ref: 8 - 40)
+Total Bilirubin ... 0.9 mg/dl (Ref: 0.2 - 1.1)
+ALP ............... 101 IU/L (Ref: 40 - 130)
+
+HAEMOGRAM
+Haemoglobin (Hb) .. 13.1 gm/dl (Ref: 13.0 - 16.5)
+WBC Count ......... 6.9 x10^3/uL (Ref: 4.0 - 10.0)
+Platelets ......... 215 x10^3/uL (Ref: 150 - 410)
+
+GLYCATED HEMOGLOBIN
+HbA1c ............. 5.7 % (Ref: 4.0 - 5.6)
