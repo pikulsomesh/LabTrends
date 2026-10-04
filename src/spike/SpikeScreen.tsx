@@ -7,11 +7,18 @@ import { File } from 'expo-file-system';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import * as PdfText from 'expo-pdf-text-extract';
 import { initLlama, type LlamaContext } from 'llama.rn';
-import { rebuildRows } from '../utils/ocrLayout';
+import * as PdfPages from '../../modules/pdf-page-renderer';
+import { extractPdfText, type PdfDeps } from '../ingest/pdf';
+import { rebuildRows, type OcrLine } from '../utils/ocrLayout';
 import { parseReport } from '../utils/parser';
 
 const SLM_PROMPT = (lines: string[]) =>
   `Extract lab results from these lines as JSON array of {"name","value","unit","ref_low","ref_high"}. Output JSON only.\n\n${lines.join('\n')}`;
+
+async function ocrLines(uri: string): Promise<OcrLine[]> {
+  const ocr = await TextRecognition.recognize(uri);
+  return ocr.blocks.flatMap((b) => b.lines).filter((l) => l.frame).map((l) => ({ text: l.text, ...l.frame! }));
+}
 
 const ms = (t0: number) => `${Math.round(performance.now() - t0)} ms`;
 
@@ -34,15 +41,37 @@ export default function SpikeScreen() {
       const t0 = performance.now();
       let out = '';
       if (a.mimeType === 'application/pdf') {
-        const info = await PdfText.extractTextWithInfo(a.uri);
-        add(`PDF info: pages=${info.pageCount} success=${info.success} encrypted=${info.isEncrypted} err=${info.errorCode ?? '-'} ${info.error ?? ''}`);
-        out = info.text;
-        add(`PDF text layer: ${out.trim().length} chars in ${ms(t0)}${out.trim() ? '' : ' (EMPTY: scanned, needs render+OCR)'}`);
+        const deps: PdfDeps = {
+          extractTextLayer: async (uri) => {
+            const info = await PdfText.extractTextWithInfo(uri);
+            add(`PDF info: pages=${info.pageCount} success=${info.success} encrypted=${info.isEncrypted} err=${info.errorCode ?? '-'} ${info.error ?? ''}`);
+            add(`PDF text layer: ${info.text.trim().length} chars in ${ms(t0)}`);
+            return info;
+          },
+          getPageCount: PdfPages.getPageCount,
+          renderPage: async (uri, i) => {
+            const t = performance.now();
+            const page = await PdfPages.renderPage(uri, i);
+            add(`  page ${i + 1}: rendered ${page.width}x${page.height} in ${ms(t)}`);
+            return page.uri;
+          },
+          ocrImage: async (uri) => {
+            const t = performance.now();
+            const lines = await ocrLines(uri);
+            add(`  OCR: ${lines.length} lines in ${ms(t)}`);
+            return lines;
+          },
+          deleteFile: (uri) => new File(uri).delete(),
+        };
+        const r = await extractPdfText(a.uri, deps);
+        out = r.text;
+        add(r.source === 'ocr'
+          ? `No usable text layer (${r.reason}${r.textLayerError ? `: ${r.textLayerError}` : ''}): render + OCR gave ${out.length} chars in ${ms(t0)}`
+          : `Using text layer (${out.trim().length} chars)`);
       } else {
-        const ocr = await TextRecognition.recognize(a.uri);
-        const lines = ocr.blocks.flatMap((b) => b.lines).filter((l) => l.frame);
-        out = rebuildRows(lines.map((l) => ({ text: l.text, ...l.frame! })));
-        add(`OCR: ${ocr.text.length} chars, ${lines.length} lines in ${ms(t0)} (rows rebuilt from boxes)`);
+        const lines = await ocrLines(a.uri);
+        out = rebuildRows(lines);
+        add(`OCR: ${out.length} chars, ${lines.length} lines in ${ms(t0)} (rows rebuilt from boxes)`);
       }
       setText(out);
       const t1 = performance.now();
