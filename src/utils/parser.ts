@@ -20,12 +20,17 @@ export interface ParseResult {
 }
 
 const NUM = String.raw`\d[\d,]*(?:\.\d+)?`;
+// OCR often reads the range hyphen as an en or em dash.
 const RANGE_RE = new RegExp(
-  String.raw`^(?:(${NUM})\s*-\s*(${NUM})|([<>]=?)\s*(${NUM}))$`,
+  String.raw`^(?:(${NUM})\s*[-\u2013\u2014]\s*(${NUM})|([<>]=?)\s*(${NUM}))$`,
 );
+// Dot leaders between name and value. OCR returns them as dot runs, spaced dots (". . ."),
+// ellipsis or middle-dot characters, or commas mixed in. Two or more leader characters, or a
+// lone ellipsis, count as a column break; a single '.' or ',' inside a number does not.
+const LEADER_RE = /\s*(?:(?:[.,\u00b7\u2026]\s?){2,}|\u2026)\s*/g;
 // name  value  unit  [(Ref:] range [)]
 const ROW_RE = new RegExp(
-  String.raw`^(?<name>[A-Za-z].*?)\s{2,}(?<value>${NUM})\s*(?<unit>[^\s\d(][^\s(]*(?:\s?\^\d+\S*)?)\s+\(?(?:Ref:?\s*)?(?<range>[^)]+?)\)?$`,
+  String.raw`^(?<name>[A-Za-z].*?)\s{2,}(?<value>${NUM})\s*(?<unit>[^\s\d(][^\s(]*(?:\s?\^\d+\S*)?)\s+\(?(?:Ref\s*:?\s*)?(?<range>[^)]+?)\)?$`,
 );
 
 const toNum = (s: string) => Number(s.replace(/,/g, ''));
@@ -53,7 +58,7 @@ export function parseReport(text: string): ParseResult {
   let category: string | null = null;
 
   for (const raw of text.split(/\r?\n/)) {
-    const line = raw.replace(/\s*\.{2,}\s*/g, '  ').trim();
+    const line = raw.replace(LEADER_RE, '  ').trim();
     if (!line) continue;
     if (/^test name\b/i.test(line)) continue;
     if (isHeading(line)) {
