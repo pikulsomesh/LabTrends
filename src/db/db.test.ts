@@ -49,7 +49,7 @@ describe('migrations', () => {
       "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
       [],
     );
-    expect(tables.map((t) => t.name)).toEqual(['aliases', 'biomarkers', 'profiles', 'reports']);
+    expect(tables.map((t) => t.name)).toEqual(['aliases', 'app_state', 'biomarkers', 'profiles', 'reports']);
   });
 
   it('is a no-op when already current, and keeps data', async () => {

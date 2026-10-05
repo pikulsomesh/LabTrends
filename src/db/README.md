@@ -8,6 +8,8 @@ SQLite access (expo-sqlite). Phase 2.
   one. A database from a newer app version is refused rather than touched.
 - `profiles.ts`, `reports.ts`, `biomarkers.ts`: CRUD and read queries. Every data query takes the
   active `profile_id`.
+- `appState.ts`: the remembered active profile (one-row `app_state` table, cleared by
+  `ON DELETE SET NULL` when that profile is deleted).
 - `aliases.ts`: the alias table, seeded from `src/utils/aliases.ts` (`ALIAS_SEED`), plus aliases
   the user adds. Seeding never overwrites a row, so user mappings win.
 - `transaction.ts`: queued transactions on the main connection (expo-sqlite's exclusive
