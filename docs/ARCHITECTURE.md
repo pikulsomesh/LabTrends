@@ -10,8 +10,8 @@
 | `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, later charts and form fields). | 3+ |
 | `src/db` | SQLite schema, migrations, CRUD, alias seed. | 2 |
 | `src/ingest` | Camera, image and PDF input. `ingest.ts` is the pure pipeline (unit-tested with fakes); `native.ts` wires in the pickers, camera, ML Kit and the local module. Text stays in memory; cache files are deleted. | 0, 4 |
-| `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 5 |
-| `src/ai` | llama.rn SLM fallback with constrained JSON output. | 5 |
+| `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 2 |
+| `src/ai` | Extraction: parser first, then the user-imported GGUF model via llama.rn for unread lines, with schema-constrained JSON and a check that every number is printed on its line. See `src/ai/README.md`. | 5 |
 | `src/chat` | Deterministic intent and entity matching for the data-only chat. | 7 |
 | `src/spike` | Phase 0 spike screen. Dev builds only; removed once Phase 4 and 5 replace it. | 0 |
 | `modules/pdf-page-renderer` | Local Expo module with two native modules: `PdfPageRenderer` (Android `PdfRenderer`) and `IngestFiles` (photo prep, SHA-256, FLAG_SECURE). | 0, 4 |
