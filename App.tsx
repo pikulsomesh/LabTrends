@@ -60,7 +60,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   }, [nav]);
 
   if (route.name === 'spike' && __DEV__) return <SpikeScreen />;
-  if (route.name === 'ingest' && active) return <IngestScreen />;
+  if (route.name === 'ingest' && active) return <IngestScreen onDone={() => dispatch({ type: 'back' })} />;
   if (route.name === 'profileHome' && active) {
     return (
       <ProfileHomeScreen

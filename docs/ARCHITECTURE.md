@@ -7,7 +7,8 @@
 | `App.tsx` | Root component. Sweeps leftover import files from the cache, opens the database, then shows the screen stack (landing, profile home, add report; dev builds can open the Phase 0 spike). | 1, 3, 4 |
 | `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen`, `IngestScreen` (add a report). | 3+ |
 | `src/state` | Active profile (`ActiveProfileProvider`, remembered in the `app_state` table) and the screen-stack reducer. No navigation library, so no extra native modules. | 3 |
-| `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, later charts and form fields). | 3+ |
+| `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, `VerifyForm`, later charts). | 3+ |
+| `src/verify` | Verification: extraction output as an editable draft, validation, duplicate lookup by file hash, and `saveDraft`, the only save path for lab values. | 6 |
 | `src/db` | SQLite schema, migrations, CRUD, alias seed. | 2 |
 | `src/ingest` | Camera, image and PDF input. `ingest.ts` is the pure pipeline (unit-tested with fakes); `native.ts` wires in the pickers, camera, ML Kit and the local module. Text stays in memory; cache files are deleted. | 0, 4 |
 | `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 2 |

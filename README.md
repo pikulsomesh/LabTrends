@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Phase 5 (extraction: parser first, local model for unread lines). See PLAN.md and docs/ARCHITECTURE.md.
+Phase 6 (verification: check, correct and save extracted values). See PLAN.md and docs/ARCHITECTURE.md.

@@ -1,13 +1,16 @@
-// Add a report: photograph it, pick photos, or pick a PDF, read its text, and pull out candidate
-// values (parser first, the imported local model for lines the parser cannot read). Everything
-// lives in this screen's state only and is dropped on leaving. Phase 6 adds review and save.
+// Add a report: photograph it, pick photos, or pick a PDF, read its text, pull out candidate
+// values (parser first, the imported local model for lines the parser cannot read), then check
+// and save them on the verification form. Text and candidates live in this screen's state only:
+// they are dropped on leaving, and cleared as soon as the report is saved.
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import VerifyForm from '../components/VerifyForm';
 import { extractReport, type Extraction, type ExtractedRow } from '../ai/extract';
 import { importedModel, importModel, loadSlm, removeModel, type ModelInfo } from '../ai/model';
 import { appendPages, ingest, type Extracted, type IngestInput } from '../ingest/ingest';
 import { deviceDeps, pickImages, pickPdf, setSecure, takePhoto } from '../ingest/native';
 import { useActiveProfile } from '../state/ActiveProfile';
+import { draftFromExtraction, type Draft } from '../verify/draft';
 
 type Picker = () => Promise<IngestInput | null>;
 
@@ -29,10 +32,16 @@ function rangeLabel(r: ExtractedRow) {
   return r.rawRefText ? ` (ref ${r.rawRefText})` : '';
 }
 
-export default function IngestScreen() {
+interface Props {
+  /** Leaves the screen after a save. */
+  onDone(): void;
+}
+
+export default function IngestScreen({ onDone }: Props) {
   const profile = useActiveProfile();
   const [result, setResult] = useState<Extracted | null>(null);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [model, setModel] = useState<ModelInfo | null>(() => importedModel());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +102,20 @@ export default function IngestScreen() {
   function discard() {
     setResult(null);
     setExtraction(null);
+    setDraft(null);
+  }
+
+  function saved() {
+    discard(); // Guardrail 2: no report text or model output kept after the save.
+    onDone();
+  }
+
+  if (draft) {
+    return (
+      <View style={styles.root}>
+        <VerifyForm profileId={profile.id} initial={draft} onSaved={saved} onBack={() => setDraft(null)} />
+      </View>
+    );
   }
 
   const canAppend = result?.kind === 'images';
@@ -121,6 +144,13 @@ export default function IngestScreen() {
           <View style={styles.actions}>
             {canAppend && <Button title="Add a page: take a photo" disabled={!!busy} onPress={() => add(takePhoto, true)} />}
             {canAppend && <Button title="Add a page: choose photos" disabled={!!busy} onPress={() => add(pickImages, true)} />}
+            {extraction && (
+              <Button
+                title="Review and save"
+                disabled={!!busy}
+                onPress={() => setDraft(draftFromExtraction(extraction, result.fileHashes))}
+              />
+            )}
             <Button title="Discard and start over" color="#b00020" disabled={!!busy} onPress={discard} />
           </View>
           {extraction && (
