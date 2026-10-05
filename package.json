@@ -27,7 +27,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:network": "node scripts/check-no-network.mjs"
   },
   "private": true
 }
