@@ -7,6 +7,7 @@ export type Route =
   | { name: 'ingest' }
   | { name: 'marker'; key: string }
   | { name: 'chat' }
+  | { name: 'backup' }
   | { name: 'spike' };
 
 export interface NavState {
@@ -18,6 +19,7 @@ export type NavAction =
   | { type: 'openIngest' }
   | { type: 'openMarker'; key: string }
   | { type: 'openChat' }
+  | { type: 'openBackup' }
   | { type: 'openSpike' }
   | { type: 'closeProfile' }
   | { type: 'back' };
@@ -44,6 +46,9 @@ export function navReducer(s: NavState, a: NavAction): NavState {
       return { stack: [...HOME, { name: 'marker', key: a.key }] };
     case 'openChat':
       return { stack: [...HOME, { name: 'chat' }] };
+    case 'openBackup':
+      // From the landing screen: a backup covers every profile.
+      return { stack: [{ name: 'profiles' }, { name: 'backup' }] };
     case 'closeProfile':
       return { stack: [{ name: 'profiles' }] };
     case 'openSpike':

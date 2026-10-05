@@ -7,11 +7,12 @@ import { useProfiles } from '../state/ActiveProfile';
 
 interface Props {
   onOpenProfile(): void;
+  onOpenBackup(): void;
   /** Dev builds only: opens the Phase 0 spike screen. */
   onOpenSpike?: () => void;
 }
 
-export default function ProfilesScreen({ onOpenProfile, onOpenSpike }: Props) {
+export default function ProfilesScreen({ onOpenProfile, onOpenBackup, onOpenSpike }: Props) {
   const { profiles, active, select, create } = useProfiles();
   const [creating, setCreating] = useState(false);
 
@@ -37,6 +38,7 @@ export default function ProfilesScreen({ onOpenProfile, onOpenSpike }: Props) {
         )}
       />
       <Button title="Add profile" onPress={() => setCreating(true)} />
+      <Button title="Backup and restore" onPress={onOpenBackup} />
       {onOpenSpike && <Button title="Open Phase 0 spike" onPress={onOpenSpike} />}
       <Disclaimer />
       <ProfileNameModal

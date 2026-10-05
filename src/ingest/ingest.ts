@@ -98,5 +98,8 @@ export function appendPages(a: Extracted, b: Extracted): Extracted {
   };
 }
 
-/** Cache subfolders that hold report files or page images. Emptied at startup in case the app died mid-import. */
-export const INGEST_CACHE_DIRS = ['DocumentPicker', 'ImagePicker', 'pdf-render', 'ingest-image'] as const;
+/**
+ * Cache subfolders that can hold report files, page images, PDF summaries or backup files.
+ * Emptied at startup in case the app died before deleting them.
+ */
+export const INGEST_CACHE_DIRS = ['DocumentPicker', 'ImagePicker', 'pdf-render', 'ingest-image', 'Print', 'export'] as const;
