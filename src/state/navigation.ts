@@ -1,7 +1,7 @@
 // Screen stack for the app. A plain reducer instead of a navigation library keeps Phase 3 free of
 // new native modules. Pure, so it is unit-tested without a phone.
 
-export type Route = { name: 'profiles' } | { name: 'profileHome' } | { name: 'spike' };
+export type Route = { name: 'profiles' } | { name: 'profileHome' } | { name: 'ingest' } | { name: 'spike' };
 
 export interface NavState {
   stack: Route[];
@@ -9,6 +9,7 @@ export interface NavState {
 
 export type NavAction =
   | { type: 'openProfile' }
+  | { type: 'openIngest' }
   | { type: 'openSpike' }
   | { type: 'closeProfile' }
   | { type: 'back' };
@@ -26,6 +27,9 @@ export function navReducer(s: NavState, a: NavAction): NavState {
   switch (a.type) {
     case 'openProfile':
       return { stack: [{ name: 'profiles' }, { name: 'profileHome' }] };
+    case 'openIngest':
+      // Always on top of the profile home, so back returns there and the extracted text is dropped.
+      return { stack: [{ name: 'profiles' }, { name: 'profileHome' }, { name: 'ingest' }] };
     case 'closeProfile':
       return { stack: [{ name: 'profiles' }] };
     case 'openSpike':

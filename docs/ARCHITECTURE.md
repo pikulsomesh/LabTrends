@@ -4,18 +4,47 @@
 
 | Path | What lives there | Phase |
 |---|---|---|
-| `App.tsx` | Root component. Opens the database, then shows the screen stack (landing, profile home; dev builds can open the Phase 0 spike). | 1, 3 |
-| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen`. | 3+ |
+| `App.tsx` | Root component. Sweeps leftover import files from the cache, opens the database, then shows the screen stack (landing, profile home, add report; dev builds can open the Phase 0 spike). | 1, 3, 4 |
+| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen`, `IngestScreen` (add a report). | 3+ |
 | `src/state` | Active profile (`ActiveProfileProvider`, remembered in the `app_state` table) and the screen-stack reducer. No navigation library, so no extra native modules. | 3 |
 | `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, later charts and form fields). | 3+ |
 | `src/db` | SQLite schema, migrations, CRUD, alias seed. | 2 |
-| `src/ingest` | Camera, image and PDF input. Text stays in memory; cache files are deleted. | 4 |
+| `src/ingest` | Camera, image and PDF input. `ingest.ts` is the pure pipeline (unit-tested with fakes); `native.ts` wires in the pickers, camera, ML Kit and the local module. Text stays in memory; cache files are deleted. | 0, 4 |
 | `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 5 |
 | `src/ai` | llama.rn SLM fallback with constrained JSON output. | 5 |
 | `src/chat` | Deterministic intent and entity matching for the data-only chat. | 7 |
 | `src/spike` | Phase 0 spike screen. Dev builds only; removed once Phase 4 and 5 replace it. | 0 |
-| `modules/pdf-page-renderer` | Local Expo module wrapping Android `PdfRenderer`. | 0 |
+| `modules/pdf-page-renderer` | Local Expo module with two native modules: `PdfPageRenderer` (Android `PdfRenderer`) and `IngestFiles` (photo prep, SHA-256, FLAG_SECURE). | 0, 4 |
 | `plugins` | Expo config plugins. | 1 |
+
+## Ingestion (Phase 4)
+
+The user opens **Add a report** from a profile and picks one of:
+
+| Input | How it is read |
+|---|---|
+| Take a photo | `expo-image-picker` camera (asks for CAMERA at that moment). One page per shot; more pages can be added. |
+| Choose photos | Android photo picker, several at once in tap order. No storage permission. |
+| Choose a PDF | `expo-document-picker`. Text layer first; render + OCR when it is missing or unusable (see `docs/PHASE0.md`). |
+
+Every photo goes through `IngestFiles.prepareImage` before ML Kit: EXIF rotation applied, transparency
+flattened onto white (ML Kit reads transparent pixels as empty), long side capped at 4000 px. OCR
+lines are rebuilt into rows with `rebuildRows`.
+
+What happens to the files:
+
+- Each input is hashed with SHA-256 (natively, streamed) before extraction. The hashes travel with
+  the text for duplicate detection when the report is saved in Phase 6.
+- Picker and camera copies, rendered PDF pages and prepared photos are deleted as soon as they are
+  read, also when extraction fails. Only files under the app cache are ever deleted, never a file
+  the user owns.
+- At startup the app empties `cache/DocumentPicker`, `cache/ImagePicker`, `cache/pdf-render` and
+  `cache/ingest-image`, in case an import was interrupted.
+- The text is kept in the import screen's state only. Leaving the screen or tapping Discard drops it.
+  The screen sets FLAG_SECURE while open, so no screenshots and a blank recents thumbnail.
+
+Permissions: CAMERA is the only one added. `RECORD_AUDIO` and the legacy storage permissions are
+blocked in `app.json`.
 
 ## Builds
 

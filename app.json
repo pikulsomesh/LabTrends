@@ -14,7 +14,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "dev.someshmohapatra.labtrends",
-      "allowBackup": false
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -28,6 +33,12 @@
         }
       ],
       "expo-dev-client",
+      [
+        "expo-image-picker",
+        {
+          "microphonePermission": false
+        }
+      ],
       "./plugins/withReleaseNoNetwork"
     ],
     "platforms": [

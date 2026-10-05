@@ -2,6 +2,8 @@ import { useEffect, useReducer, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { openDatabase, type Db } from './src/db';
+import { sweepIngestCache } from './src/ingest/native';
+import IngestScreen from './src/screens/IngestScreen';
 import ProfileHomeScreen from './src/screens/ProfileHomeScreen';
 import ProfilesScreen from './src/screens/ProfilesScreen';
 import SpikeScreen from './src/spike/SpikeScreen';
@@ -15,6 +17,8 @@ export default function App() {
   const [boot, setBoot] = useState<Boot>(null);
 
   useEffect(() => {
+    // Guardrail 2: remove report files or page images an interrupted import left in the cache.
+    sweepIngestCache();
     openDatabase()
       .then(async (db) => setBoot({ db, session: await loadSession(db) }))
       .catch((e) => setBoot({ error: e instanceof Error ? e.message : String(e) }));
@@ -56,8 +60,14 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   }, [nav]);
 
   if (route.name === 'spike' && __DEV__) return <SpikeScreen />;
+  if (route.name === 'ingest' && active) return <IngestScreen />;
   if (route.name === 'profileHome' && active) {
-    return <ProfileHomeScreen onSwitchProfile={() => dispatch({ type: 'closeProfile' })} />;
+    return (
+      <ProfileHomeScreen
+        onSwitchProfile={() => dispatch({ type: 'closeProfile' })}
+        onAddReport={() => dispatch({ type: 'openIngest' })}
+      />
+    );
   }
   return (
     <ProfilesScreen

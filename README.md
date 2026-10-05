@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Phase 3 (profiles and navigation). See PLAN.md and docs/ARCHITECTURE.md.
+Phase 4 (ingestion: camera, photos and PDF to in-memory text). See PLAN.md and docs/ARCHITECTURE.md.

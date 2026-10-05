@@ -1,6 +1,9 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["expo.modules.pdfpagerenderer.PdfPageRendererModule"]
+    "modules": [
+      "expo.modules.pdfpagerenderer.PdfPageRendererModule",
+      "expo.modules.pdfpagerenderer.IngestFilesModule"
+    ]
   }
 }
