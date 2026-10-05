@@ -2,7 +2,21 @@
 
 SQLite access (expo-sqlite). Phase 2.
 
-- Schema, migrations (`PRAGMA user_version`), CRUD helpers and the alias table seed.
-- Every data query takes the active `profile_id`.
-- Only verified, structured values are stored. No image blobs, PDFs or raw OCR text.
-- Writes come from the Verification screen only, never straight from the parser or the SLM.
+- `openDatabase()` (`open.ts`) opens `labtrends.db` once, turns on foreign keys and WAL, runs
+  migrations and tops up the alias seed. Everything else takes the returned `Db`.
+- `schema.ts`: migrations, tracked with `PRAGMA user_version`. Append new ones; never edit a shipped
+  one. A database from a newer app version is refused rather than touched.
+- `profiles.ts`, `reports.ts`, `biomarkers.ts`: CRUD and read queries. Every data query takes the
+  active `profile_id`.
+- `aliases.ts`: the alias table, seeded from `src/utils/aliases.ts` (`ALIAS_SEED`), plus aliases
+  the user adds. Seeding never overwrites a row, so user mappings win.
+- `transaction.ts`: queued transactions on the main connection (expo-sqlite's exclusive
+  transactions use a second connection, where foreign keys would be off).
+- `testDb.ts`: the same `Db` interface over `node:sqlite`, for unit tests only.
+
+Rules:
+
+- Only verified, structured values are stored. No image blobs, PDFs or raw OCR text. Text columns
+  have length limits and the file hash must be SHA-256 hex.
+- `saveVerifiedReport` is the only write path for lab values. Call it from the Verification
+  screen, never straight from the parser or the SLM.
