@@ -46,6 +46,14 @@ export const MIGRATIONS: readonly string[] = [
     source TEXT NOT NULL CHECK (source IN ('seed', 'user'))
   );
   `,
+  // 2: the profile the app opens on. One row; cleared when that profile is deleted.
+  `
+  CREATE TABLE app_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    active_profile_id INTEGER REFERENCES profiles(id) ON DELETE SET NULL
+  );
+  INSERT INTO app_state (id) VALUES (1);
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

@@ -4,9 +4,10 @@
 
 | Path | What lives there | Phase |
 |---|---|---|
-| `App.tsx` | Root component. Shows `HomeScreen`; dev builds can open the Phase 0 spike. | 1 |
-| `src/screens` | One file per screen. | 3+ |
-| `src/components` | Shared UI pieces (`Disclaimer`, later charts and form fields). | 3+ |
+| `App.tsx` | Root component. Opens the database, then shows the screen stack (landing, profile home; dev builds can open the Phase 0 spike). | 1, 3 |
+| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen`. | 3+ |
+| `src/state` | Active profile (`ActiveProfileProvider`, remembered in the `app_state` table) and the screen-stack reducer. No navigation library, so no extra native modules. | 3 |
+| `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, later charts and form fields). | 3+ |
 | `src/db` | SQLite schema, migrations, CRUD, alias seed. | 2 |
 | `src/ingest` | Camera, image and PDF input. Text stays in memory; cache files are deleted. | 4 |
 | `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 5 |
