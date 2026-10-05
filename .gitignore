@@ -41,8 +41,8 @@ yarn-error.*
 /android
 
 # Generated native project (Expo CNG)
-android/
-ios/
+/android/
+/ios/
 *.log
 .expo/
 metro.log
