@@ -21,7 +21,7 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,13 +34,32 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+          df -h /
+
       - run: npm ci
       - run: npm run check:network
       - run: npx expo prebuild --platform android --no-install
 
+      # Two workers and a capped heap keep the 16 GB runner from running out of memory during the
+      # native (CMake/llama.cpp) compile. The log goes to a file so it survives a lost runner.
       - name: Build release APK
         working-directory: android
-        run: ./gradlew :app:assembleRelease --no-daemon
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=2 --console=plain 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: ${{ runner.temp }}/gradle-build.log
+          if-no-files-found: ignore
 
       - name: Check the APK requests no network permission and ships arm64 only
         run: |
