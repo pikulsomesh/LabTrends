@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Planning. See PLAN.md.
+Phase 1 (init and architecture). See PLAN.md and docs/ARCHITECTURE.md.

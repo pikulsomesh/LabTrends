@@ -27,7 +27,8 @@
           }
         }
       ],
-      "expo-dev-client"
+      "expo-dev-client",
+      "./plugins/withReleaseNoNetwork"
     ],
     "platforms": [
       "android"
