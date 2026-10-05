@@ -38,4 +38,11 @@ describe('navigation', () => {
     expect(currentRoute(s).name).toBe('spike');
     expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles']);
   });
+
+  it('opens import above the profile home, and back returns there', () => {
+    let s = navReducer(initialNav(2), { type: 'openIngest' });
+    s = navReducer(s, { type: 'openIngest' });
+    expect(names(s)).toEqual(['profiles', 'profileHome', 'ingest']);
+    expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles', 'profileHome']);
+  });
 });

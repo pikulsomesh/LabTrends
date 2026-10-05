@@ -1,5 +1,5 @@
-// Home for the active profile. Phase 7 puts the dashboard here; for now it shows the report count
-// and lets the user rename or delete the profile.
+// Home for the active profile. Phase 7 puts the dashboard here; for now it shows the report count,
+// opens report import, and lets the user rename or delete the profile.
 import { useEffect, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, View } from 'react-native';
 import Disclaimer from '../components/Disclaimer';
@@ -9,9 +9,10 @@ import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
 
 interface Props {
   onSwitchProfile(): void;
+  onAddReport(): void;
 }
 
-export default function ProfileHomeScreen({ onSwitchProfile }: Props) {
+export default function ProfileHomeScreen({ onSwitchProfile, onAddReport }: Props) {
   const { db, rename, remove } = useProfiles();
   const profile = useActiveProfile();
   const [reportCount, setReportCount] = useState<number | null>(null);
@@ -52,6 +53,7 @@ export default function ProfileHomeScreen({ onSwitchProfile }: Props) {
         {reportCount == null ? ' ' : reportCount === 0 ? 'No reports yet.' : `${reportCount} saved report${reportCount === 1 ? '' : 's'}.`}
       </Text>
       <View style={styles.actions}>
+        <Button title="Add a report" onPress={onAddReport} />
         <Button title="Switch profile" onPress={onSwitchProfile} />
         <Button title="Rename" onPress={() => setRenaming(true)} />
         <Button title="Delete profile" color="#b00020" onPress={confirmDelete} />
