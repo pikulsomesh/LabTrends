@@ -1,9 +1,11 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { openDatabase, type Db } from './src/db';
 import { sweepIngestCache } from './src/ingest/native';
+import ChatScreen from './src/screens/ChatScreen';
 import IngestScreen from './src/screens/IngestScreen';
+import MarkerScreen from './src/screens/MarkerScreen';
 import ProfileHomeScreen from './src/screens/ProfileHomeScreen';
 import ProfilesScreen from './src/screens/ProfilesScreen';
 import SpikeScreen from './src/spike/SpikeScreen';
@@ -48,6 +50,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   const { active } = useProfiles();
   const [nav, dispatch] = useReducer(navReducer, initialActiveId, initialNav);
   const route = currentRoute(nav);
+  const goBack = useCallback(() => dispatch({ type: 'back' }), []);
 
   // Android back button: pop a screen, or let the system leave the app from the landing screen.
   useEffect(() => {
@@ -60,12 +63,16 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   }, [nav]);
 
   if (route.name === 'spike' && __DEV__) return <SpikeScreen />;
-  if (route.name === 'ingest' && active) return <IngestScreen onDone={() => dispatch({ type: 'back' })} />;
+  if (route.name === 'ingest' && active) return <IngestScreen onDone={goBack} />;
+  if (route.name === 'marker' && active) return <MarkerScreen markerKey={route.key} onEmpty={goBack} />;
+  if (route.name === 'chat' && active) return <ChatScreen />;
   if (route.name === 'profileHome' && active) {
     return (
       <ProfileHomeScreen
         onSwitchProfile={() => dispatch({ type: 'closeProfile' })}
         onAddReport={() => dispatch({ type: 'openIngest' })}
+        onOpenMarker={(key) => dispatch({ type: 'openMarker', key })}
+        onOpenChat={() => dispatch({ type: 'openChat' })}
       />
     );
   }
