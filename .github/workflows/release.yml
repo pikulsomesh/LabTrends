@@ -1,8 +1,7 @@
 name: Release APK
 
 on:
-  push:
-    tags: ['v*']
+  # Tags no longer rebuild: .github/workflows/publish-release.yml reuses the APK built on the PR.
   workflow_dispatch:
   # Every PR builds the release APK before it merges: JavaScript changes can break the release
   # bundle too, not only native or build config changes.
@@ -10,6 +9,12 @@ on:
 
 permissions:
   contents: write
+
+# A newer push to the same PR supersedes the older run: the release build takes over an hour, so
+# finishing a stale one only burns Actions minutes.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   android:

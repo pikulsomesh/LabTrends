@@ -4,11 +4,16 @@ name: SLM eval
 
 on:
   pull_request:
-    paths: ['eval/**', 'src/ai/**', 'src/utils/parser.ts', '.github/workflows/slm-eval.yml']
+    # Only what changes the prompts, the row check or the parser can move the scores.
+    paths: ['eval/**', 'src/ai/slmRows.ts', 'src/ai/extract.ts', 'src/utils/parser.ts']
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: slm-eval-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run:

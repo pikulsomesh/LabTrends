@@ -1,0 +1,55 @@
+# Publishes an APK that was already built and tested on a pull request, instead of building the same
+# code a second time. Pushing a `v*` tag finds the successful "Release APK" run whose commit has the
+# same file tree as the tagged commit (a squash merge has a new commit id but the same tree), takes
+# its `labtrends-apk` artifact and drafts a GitHub Release from it. It costs about a minute of Actions
+# time, against over an hour for a fresh build. If no run matches, it fails and says why.
+name: Publish release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Find the matching build
+        id: find
+        run: |
+          set -euo pipefail
+          TAG_TREE=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq .commit.tree.sha)
+          echo "Tagged commit $GITHUB_SHA has tree $TAG_TREE"
+          RUN=""
+          while read -r id sha; do
+            tree=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq .commit.tree.sha 2>/dev/null || true)
+            echo "run $id ($sha): tree ${tree:-unknown}"
+            if [ "$tree" = "$TAG_TREE" ]; then RUN=$id; break; fi
+          done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?status=success&per_page=50" \
+                     --jq '.workflow_runs[] | select(.event=="pull_request" or .event=="workflow_dispatch" or .event=="push") | "\(.id) \(.head_sha)"')
+          if [ -z "$RUN" ]; then
+            echo "::error::No successful Release APK run has the same files as $GITHUB_REF_NAME. Run Release APK on the tagged commit from the Actions tab, then re-run this job."
+            exit 1
+          fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Download the APK
+        run: gh run download "${{ steps.find.outputs.run }}" --repo "$GITHUB_REPOSITORY" --name labtrends-apk --dir dist
+
+      - name: Check the download
+        run: |
+          set -euo pipefail
+          cd dist
+          ls -l
+          sha256sum -c SHA256SUMS
+
+      - name: Draft GitHub Release
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "$GITHUB_REF_NAME" \
+            --notes "Release APK for arm64-v8a, built and smoke-tested on the pull request this tag points at. Verify with SHA256SUMS."
