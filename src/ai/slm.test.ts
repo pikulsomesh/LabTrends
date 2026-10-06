@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { extractReport, SLM_BATCH, type SlmSession } from './extract';
-import { acceptSlmRows, numbersIn, slmUserPrompt } from './slmRows';
+import { acceptSlmRows, numbersIn, plausibleName, printedRange, slmUserPrompt } from './slmRows';
 
 const fixture = (n: number) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
 
@@ -101,11 +101,11 @@ describe('extractReport', () => {
     expect(session.release).toHaveBeenCalledTimes(1);
   });
 
-  it('sends unparsed lines in batches', async () => {
+  it('sends unparsed lines in batches of SLM_BATCH', async () => {
     const lines = Array.from({ length: SLM_BATCH + 3 }, (_, i) => `Marker${i}           ${i + 1}.4   9d        1.0 - 99.0`);
     const { session, load } = fakeSlm(() => '{"rows":[]}');
     const r = await extractReport(lines.join('\n'), load);
-    expect(session.complete).toHaveBeenCalledTimes(2);
+    expect(session.complete).toHaveBeenCalledTimes(Math.ceil(lines.length / SLM_BATCH));
     expect(r.unparsed).toHaveLength(lines.length);
   });
 
@@ -138,5 +138,67 @@ describe('isGguf', () => {
     expect(isGguf(new TextEncoder().encode('GGUF\u0003\u0000'))).toBe(true);
     expect(isGguf(new TextEncoder().encode('%PDF-1.7'))).toBe(false);
     expect(isGguf(new Uint8Array([0x47, 0x47]))).toBe(false);
+  });
+});
+
+describe('printed range', () => {
+  const read = (line: string, value: number, unit: string) => printedRange(line, value, unit);
+
+  it('reads "a - b" in every dash and "to"', () => {
+    expect(read('Calcium 9.4 mg/dL 8.6\u201310.2', 9.4, 'mg/dL')).toMatchObject({ low: 8.6, high: 10.2 });
+    expect(read('Glucose 92 mg/dL Ref. Range 70 to 100', 92, 'mg/dL')).toMatchObject({ low: 70, high: 100 });
+    expect(read('Alk Phos 96 U/L Range: 44-147', 96, 'U/L')).toMatchObject({ low: 44, high: 147 });
+  });
+
+  it('puts the bound of "<" and ">" on the right side, including "<=" and wording', () => {
+    expect(read('Triglycerides 168 mg/dL Normal: < 150', 168, 'mg/dL')).toMatchObject({ low: null, high: 150 });
+    expect(read('SGPT (ALT) 52 U/L <= 41', 52, 'U/L')).toMatchObject({ low: null, high: 41 });
+    expect(read('CRP 3.2 mg/L Less than 5', 3.2, 'mg/L')).toMatchObject({ low: null, high: 5 });
+    expect(read('ESR 14 mm/hr Up to 20', 14, 'mm/hr')).toMatchObject({ low: null, high: 20 });
+    expect(read('HDL 46 mg/dL Desirable > 40', 46, 'mg/dL')).toMatchObject({ low: 40, high: null });
+    expect(read('eGFR 92 mL/min/1.73m2 > 90', 92, 'mL/min/1.73m2')).toMatchObject({ low: 90, high: null });
+  });
+
+  it('reads a range after a unit that holds digits, and after a damaged unit', () => {
+    expect(read('Platelet Count 215 x10^3/uL 150 - 410', 215, 'x10^3/uL')).toMatchObject({ low: 150, high: 410 });
+    expect(read('SGOT (AST) 38 IU/1 8 - 40', 38, 'IU/L')).toMatchObject({ low: 8, high: 40 });
+  });
+
+  it('finds nothing when no range is printed', () => {
+    expect(read('Vitamin D 25-OH 18.2 ng/mL', 18.2, 'ng/mL')).toBeNull();
+  });
+
+  it('keeps the printed range text for the Verify screen', () => {
+    expect(read('Total Protein 7.1 g/dL (Normal 6.0 to 8.3)', 7.1, 'g/dL')?.text).toBe('6.0 to 8.3');
+  });
+});
+
+describe('acceptSlmRows guards', () => {
+  it('replaces swapped bounds with the printed ones', () => {
+    const [r] = acceptSlmRows({ rows: [row(0, 'Triglycerides', 168, 'mg/dL', 150, null)] }, ['Triglycerides 168 mg/dL < 150']);
+    expect(r).toMatchObject({ refLow: null, refHigh: 150, rawRefText: '< 150' });
+  });
+
+  it('drops a row with no unit and no range, such as an ID', () => {
+    expect(acceptSlmRows({ rows: [row(0, 'Account', 4471230, '', null, null)] }, ['Account 4471230'])).toEqual([]);
+  });
+
+  it('keeps a ratio that has neither unit nor range', () => {
+    expect(acceptSlmRows({ rows: [row(0, 'Cholesterol Ratio', 4.6, '', null, null)] }, ['Cholesterol Ratio 4.6'])).toHaveLength(1);
+  });
+
+  it('drops rows named like paperwork', () => {
+    expect(acceptSlmRows({ rows: [row(0, 'Method', 37, 'C', null, null)] }, ['Method: Photometric (IFCC) 37 C'])).toEqual([]);
+    expect(plausibleName('Total Leucocyte Count')).toBe(true);
+    expect(plausibleName('Values in the range')).toBe(false);
+    expect(plausibleName('Reg No')).toBe(false);
+    expect(plausibleName('Result: TSH')).toBe(false);
+    expect(plausibleName('a b c d e f g')).toBe(false);
+  });
+
+  it('asks for one line at a time in worked-example form', () => {
+    const p = slmUserPrompt(['Hemoglobin 13.4 g/dL 13.0 - 17.0']);
+    expect(p).toContain('Lines:\n0: Hemoglobin 13.4 g/dL 13.0 - 17.0\nAnswer:');
+    expect(p).toContain('{"rows":[]}');
   });
 });

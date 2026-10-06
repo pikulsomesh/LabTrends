@@ -23,8 +23,11 @@ export interface Extraction {
   slmError?: string;
 }
 
-/** Lines per SLM call: keeps prompt plus output well inside a 2048-token context. */
-export const SLM_BATCH = 10;
+/**
+ * Lines per SLM call. One: in the eval (eval/slm) small models read a single line far more
+ * reliably than ten, and a call stays short inside the 2048-token context.
+ */
+export const SLM_BATCH = 1;
 /** More unparsed lines than this is not a report the SLM can rescue; the rest stay unparsed. */
 export const SLM_MAX_LINES = 60;
 

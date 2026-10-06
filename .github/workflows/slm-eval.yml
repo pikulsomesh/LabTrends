@@ -1,0 +1,81 @@
+# Scores small local language models on the golden set in eval/slm (see eval/slm/README.md).
+# Runs on CI because the models come from Hugging Face; the app itself never downloads anything.
+name: SLM eval
+
+on:
+  pull_request:
+    paths: ['eval/**', 'src/ai/**', 'src/utils/parser.ts', '.github/workflows/slm-eval.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: run ${{ matrix.model }} batch ${{ matrix.batch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep in step with eval/slm/models.json (a unit test checks this list).
+        model:
+          - smollm2-135m-q2
+          - smollm2-135m-q4
+          - gemma3-270m-q4
+          - smollm2-360m-q4
+          - qwen2.5-0.5b-q4
+          - qwen3-0.6b-q4
+          - qwen2.5-0.5b-q8
+          - qwen3-0.6b-q8
+          - qwen2.5-1.5b-q4
+        # Lines per model call. The first run compared 1 and 10: one line per call won for every model.
+        batch: [1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - name: Install llama.cpp bindings (prebuilt CPU wheel)
+        run: pip install llama-cpp-python huggingface_hub --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+      - name: Build the prompts the app would send
+        run: npx --yes tsx@4 eval/slm/make-requests.ts requests.json ${{ matrix.batch }}
+      - name: Run the model
+        run: python eval/slm/run_models.py requests.json outputs ${{ matrix.model }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: outputs-${{ matrix.model }}-b${{ matrix.batch }}
+          path: outputs/
+
+  report:
+    name: score and report
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: outputs-*
+          path: outputs
+          merge-multiple: true
+      - name: Score against the golden set
+        run: npx --yes tsx@4 eval/slm/report.ts outputs results.md results.json
+      - name: Show the table on the run page
+        run: cat results.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slm-eval-results
+          path: |
+            results.md
+            results.json
