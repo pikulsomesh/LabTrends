@@ -1,0 +1,59 @@
+# Re-runs the emulator smoke test against the newest successful release APK, without a rebuild.
+# The release build takes about an hour; a change to the Maestro flow or the script does not need
+# it. release.yml still runs the same test on every build before a PR merges.
+name: Emulator smoke test
+
+on:
+  pull_request:
+    paths: ['.maestro/**', 'scripts/emulator-smoke.sh', '.github/workflows/emulator.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the newest successful release APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RUN=$(gh run list --workflow release.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          echo "Using APK from run $RUN"
+          gh run download "$RUN" --name labtrends-apk --dir apk
+          ls -la apk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Run smoke test on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: ./scripts/emulator-smoke.sh emulator-results
+      - name: Upload emulator results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-results
+          path: emulator-results/
+          if-no-files-found: ignore
