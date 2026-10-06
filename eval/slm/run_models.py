@@ -18,8 +18,9 @@ def run_one(spec, requests, out_dir):
     from huggingface_hub import hf_hub_download
     from llama_cpp import Llama
 
-    result = {"id": spec["id"], "status": "ok", "outputs": []}
-    path = os.path.join(out_dir, spec["id"] + ".json")
+    batch = len(requests[0]["lines"]) if requests else 0
+    result = {"id": spec["id"], "batch": batch, "status": "ok", "requests": requests, "outputs": []}
+    path = os.path.join(out_dir, f"{spec['id']}-b{batch}.json")
     try:
         gguf = hf_hub_download(repo_id=spec["repo"], filename=spec["file"])
     except Exception as e:  # missing file, gated repo, network

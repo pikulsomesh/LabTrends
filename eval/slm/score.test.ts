@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { EXAMPLE_LINES } from '../../src/ai/slmRows';
 import { parseReport } from '../../src/utils/parser';
 import { GOLDEN } from './golden';
 import { buildRequests, passes, scoreOutputs, type EvalOutput } from './score';
@@ -22,6 +23,10 @@ describe('golden set', () => {
     expect(GOLDEN.length).toBeLessThanOrEqual(100);
     expect(GOLDEN.filter((g) => g.expect).length).toBeGreaterThan(50);
     expect(GOLDEN.filter((g) => !g.expect).length).toBeGreaterThan(10);
+  });
+
+  it('does not reuse a line from the prompt examples, so the eval cannot reward copying', () => {
+    for (const line of EXAMPLE_LINES) expect(GOLDEN.map((g) => g.line)).not.toContain(line);
   });
 
   it('has no duplicate lines', () => {

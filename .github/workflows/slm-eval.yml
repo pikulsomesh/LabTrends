@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   run:
-    name: run ${{ matrix.model }}
+    name: run ${{ matrix.model }} batch ${{ matrix.batch }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -27,6 +27,8 @@ jobs:
           - qwen2.5-0.5b-q4
           - qwen3-0.6b-q4
           - qwen2.5-1.5b-q4
+        # Lines per model call. One line per call is easier for a small model; ten is faster.
+        batch: [1, 10]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,12 +42,12 @@ jobs:
       - name: Install llama.cpp bindings (prebuilt CPU wheel)
         run: pip install llama-cpp-python huggingface_hub --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
       - name: Build the prompts the app would send
-        run: npx --yes tsx@4 eval/slm/make-requests.ts requests.json
+        run: npx --yes tsx@4 eval/slm/make-requests.ts requests.json ${{ matrix.batch }}
       - name: Run the model
         run: python eval/slm/run_models.py requests.json outputs ${{ matrix.model }}
       - uses: actions/upload-artifact@v4
         with:
-          name: outputs-${{ matrix.model }}
+          name: outputs-${{ matrix.model }}-b${{ matrix.batch }}
           path: outputs/
 
   report:

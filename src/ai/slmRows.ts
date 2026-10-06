@@ -44,13 +44,41 @@ export const SLM_SYSTEM =
   'You copy lab test results from text into JSON. Copy names and numbers exactly as printed. ' +
   'Do not calculate, convert, interpret or add anything. Skip lines that are not a test result.';
 
+// Worked examples for the prompt. They cover the cases small models get wrong: which bound a
+// "<" or ">" sets, a flag printed next to the value, a result with no range, and a line that is
+// not a result. None of these lines appear in the eval golden set (eval/slm/golden.ts).
+export const EXAMPLE_LINES = [
+  'Chloride 101 mmol/L 98 - 107',
+  'Lipase 38 U/L Up to 60',
+  'Apolipoprotein A1 150 mg/dL > 120',
+  'Bilirubin Indirect 0.9 H mg/dL 0.2 - 0.8',
+  'Zinc 88 ug/dL',
+  'Phone: 022 4567 8910',
+];
+const EXAMPLE_OUTPUT = {
+  rows: [
+    { line: 0, name: 'Chloride', value: 101, unit: 'mmol/L', ref_low: 98, ref_high: 107 },
+    { line: 1, name: 'Lipase', value: 38, unit: 'U/L', ref_low: null, ref_high: 60 },
+    { line: 2, name: 'Apolipoprotein A1', value: 150, unit: 'mg/dL', ref_low: 120, ref_high: null },
+    { line: 3, name: 'Bilirubin Indirect', value: 0.9, unit: 'mg/dL', ref_low: 0.2, ref_high: 0.8 },
+    { line: 4, name: 'Zinc', value: 88, unit: 'ug/dL', ref_low: null, ref_high: null },
+  ],
+};
+
 export function slmUserPrompt(lines: string[]): string {
   const numbered = lines.map((l, i) => `${i}: ${l}`).join('\n');
+  const example = EXAMPLE_LINES.map((l, i) => `${i}: ${l}`).join('\n');
   return (
     'Each line below may hold one lab result: test name, value, unit and reference range. ' +
-    'For each result give the line number, name, value, unit, ref_low and ref_high. ' +
-    'Use null for a missing range bound. Fix only obvious OCR misreads in the unit (for example "9d" for "g/dL").\n\n' +
-    numbered
+    'For each result give the line number, name, value, unit, ref_low and ref_high.\n' +
+    'Rules:\n' +
+    '- The value is the measured number, not a range bound. Ignore flags such as H, L, HIGH, LOW and *.\n' +
+    '- "a - b" or "a to b" means ref_low a and ref_high b. "< b", "<= b", "up to b" or "less than b" means ref_low null and ref_high b. ' +
+    '"> a" or "more than a" means ref_low a and ref_high null.\n' +
+    '- Use null for a bound that is not printed. Fix only obvious OCR misreads in the unit (for example "9d" for "g/dL").\n' +
+    '- A line that is not a lab result (phone number, address, ID, page number, note) gets no row. If no line is a result, return an empty rows array.\n\n' +
+    `Example lines:\n${example}\nExample answer:\n${JSON.stringify(EXAMPLE_OUTPUT)}\n\n` +
+    `Lines to read:\n${numbered}`
   );
 }
 

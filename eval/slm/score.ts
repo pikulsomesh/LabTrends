@@ -33,11 +33,11 @@ export function orderedItems(items: GoldItem[] = GOLDEN, seed = 20261006): GoldI
   return out;
 }
 
-export function buildRequests(items: GoldItem[] = GOLDEN): EvalRequest[] {
+export function buildRequests(items: GoldItem[] = GOLDEN, batchSize: number = SLM_BATCH): EvalRequest[] {
   const ordered = orderedItems(items);
   const requests: EvalRequest[] = [];
-  for (let i = 0; i < ordered.length; i += SLM_BATCH) {
-    const lines = ordered.slice(i, i + SLM_BATCH).map((it) => it.line);
+  for (let i = 0; i < ordered.length; i += batchSize) {
+    const lines = ordered.slice(i, i + batchSize).map((it) => it.line);
     requests.push({ id: requests.length, system: SLM_SYSTEM, user: slmUserPrompt(lines), schema: SLM_SCHEMA, lines });
   }
   return requests;
@@ -77,13 +77,23 @@ export interface Metrics {
   msPerBatchP50: number;
   msPerBatchP95: number;
   tokensPerSecond: number;
+  /** A few concrete failures, so a low score can be read, not just counted. */
+  examples: Example[];
 }
+
+export interface Example {
+  what: 'missed' | 'wrong' | 'false-positive' | 'invalid-json';
+  line?: string;
+  expected?: string;
+  got?: string;
+}
+
+const MAX_EXAMPLES = 12;
 
 const pct = (sorted: number[], p: number) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] : 0);
 const ratio = (a: number, b: number) => (b === 0 ? 0 : a / b);
 
-export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN): Metrics {
-  const requests = buildRequests(items);
+export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN, requests: EvalRequest[] = buildRequests(items)): Metrics {
   const byId = new Map(outputs.map((o) => [o.id, o]));
   const expectByLine = new Map(items.map((it) => [it.line, it]));
 
@@ -94,6 +104,8 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN):
   const ms: number[] = [];
   let tokens = 0, totalMs = 0;
   let negKept = 0;
+  const examples: Example[] = [];
+  const note = (e: Example) => examples.length < MAX_EXAMPLES && examples.push(e);
 
   for (const req of requests) {
     const out = byId.get(req.id);
@@ -108,6 +120,7 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN):
       }
     }
     if (valid) validBatches++;
+    else note({ what: 'invalid-json', got: (out?.raw ?? '(call failed)').slice(0, 240) });
     if (out) {
       ms.push(out.ms);
       tokens += out.completionTokens;
@@ -127,10 +140,14 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN):
         if (row) {
           fp++;
           negKept++;
+          note({ what: 'false-positive', line, got: `${row.name} = ${row.value} ${row.unit}` });
         } else kind.correct++;
         continue;
       }
-      if (!row) continue;
+      if (!row) {
+        note({ what: 'missed', line });
+        continue;
+      }
       answered++;
       const e = item.expect;
       const name = compactName(row.name) === compactName(e.name) || (row.canonicalName != null && row.canonicalName === canonicalize(e.name));
@@ -146,6 +163,8 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN):
         kind.correct++;
       } else {
         wrong++;
+        const fmt = (n: string, v: number, u: string, lo: number | null, hi: number | null) => `${n} | ${v} ${u} | ${lo ?? '-'} .. ${hi ?? '-'}`;
+        note({ what: 'wrong', line, expected: fmt(e.name, e.value, e.unit, e.ref_low, e.ref_high), got: fmt(row.name, row.value, row.unit, row.refLow, row.refHigh) });
       }
     }
   }
@@ -181,6 +200,7 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN):
     msPerBatchP50: pct(sorted, 0.5),
     msPerBatchP95: pct(sorted, 0.95),
     tokensPerSecond: totalMs ? tokens / (totalMs / 1000) : 0,
+    examples,
   };
 }
 
