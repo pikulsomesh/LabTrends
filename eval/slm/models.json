@@ -1,9 +1,65 @@
 [
-  { "id": "smollm2-135m-q2", "label": "SmolLM2-135M-Instruct Q2_K", "params": "135M", "repo": "bartowski/SmolLM2-135M-Instruct-GGUF", "file": "SmolLM2-135M-Instruct-Q2_K.gguf" },
-  { "id": "smollm2-135m-q4", "label": "SmolLM2-135M-Instruct Q4_K_M", "params": "135M", "repo": "bartowski/SmolLM2-135M-Instruct-GGUF", "file": "SmolLM2-135M-Instruct-Q4_K_M.gguf" },
-  { "id": "gemma3-270m-q4", "label": "Gemma-3-270M-it Q4_K_M", "params": "270M", "repo": "unsloth/gemma-3-270m-it-GGUF", "file": "gemma-3-270m-it-Q4_K_M.gguf" },
-  { "id": "smollm2-360m-q4", "label": "SmolLM2-360M-Instruct Q4_K_M", "params": "360M", "repo": "bartowski/SmolLM2-360M-Instruct-GGUF", "file": "SmolLM2-360M-Instruct-Q4_K_M.gguf" },
-  { "id": "qwen2.5-0.5b-q4", "label": "Qwen2.5-0.5B-Instruct Q4_K_M", "params": "494M", "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF", "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf" },
-  { "id": "qwen3-0.6b-q4", "label": "Qwen3-0.6B Q4_K_M", "params": "600M", "repo": "unsloth/Qwen3-0.6B-GGUF", "file": "Qwen3-0.6B-Q4_K_M.gguf" },
-  { "id": "qwen2.5-1.5b-q4", "label": "Qwen2.5-1.5B-Instruct Q4_K_M (reference)", "params": "1.5B", "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF", "file": "qwen2.5-1.5b-instruct-q4_k_m.gguf" }
+  {
+    "id": "smollm2-135m-q2",
+    "label": "SmolLM2-135M-Instruct Q2_K",
+    "params": "135M",
+    "repo": "bartowski/SmolLM2-135M-Instruct-GGUF",
+    "file": "SmolLM2-135M-Instruct-Q2_K.gguf"
+  },
+  {
+    "id": "smollm2-135m-q4",
+    "label": "SmolLM2-135M-Instruct Q4_K_M",
+    "params": "135M",
+    "repo": "bartowski/SmolLM2-135M-Instruct-GGUF",
+    "file": "SmolLM2-135M-Instruct-Q4_K_M.gguf"
+  },
+  {
+    "id": "gemma3-270m-q4",
+    "label": "Gemma-3-270M-it Q4_K_M",
+    "params": "270M",
+    "repo": "unsloth/gemma-3-270m-it-GGUF",
+    "file": "gemma-3-270m-it-Q4_K_M.gguf"
+  },
+  {
+    "id": "smollm2-360m-q4",
+    "label": "SmolLM2-360M-Instruct Q4_K_M",
+    "params": "360M",
+    "repo": "bartowski/SmolLM2-360M-Instruct-GGUF",
+    "file": "SmolLM2-360M-Instruct-Q4_K_M.gguf"
+  },
+  {
+    "id": "qwen2.5-0.5b-q4",
+    "label": "Qwen2.5-0.5B-Instruct Q4_K_M",
+    "params": "494M",
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+  },
+  {
+    "id": "qwen3-0.6b-q4",
+    "label": "Qwen3-0.6B Q4_K_M",
+    "params": "600M",
+    "repo": "unsloth/Qwen3-0.6B-GGUF",
+    "file": "Qwen3-0.6B-Q4_K_M.gguf"
+  },
+  {
+    "id": "qwen2.5-0.5b-q8",
+    "label": "Qwen2.5-0.5B-Instruct Q8_0",
+    "params": "494M",
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "file": "qwen2.5-0.5b-instruct-q8_0.gguf"
+  },
+  {
+    "id": "qwen3-0.6b-q8",
+    "label": "Qwen3-0.6B Q8_0",
+    "params": "600M",
+    "repo": "unsloth/Qwen3-0.6B-GGUF",
+    "file": "Qwen3-0.6B-Q8_0.gguf"
+  },
+  {
+    "id": "qwen2.5-1.5b-q4",
+    "label": "Qwen2.5-1.5B-Instruct Q4_K_M (reference)",
+    "params": "1.5B",
+    "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+    "file": "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+  }
 ]

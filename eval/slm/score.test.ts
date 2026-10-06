@@ -72,16 +72,12 @@ describe('scoring', () => {
 
   it('counts a row on a non-result line as a false positive', () => {
     const outputs = perfectOutputs();
-    const first = buildRequests()[0];
-    const negIndex = first.lines.findIndex((l) => !GOLDEN.find((g) => g.line === l)!.expect);
-    if (negIndex < 0) return;
-    const line = first.lines[negIndex];
-    const parsed = JSON.parse(outputs[0].raw!);
-    // Name text must be on the line to survive the app check, so reuse a word from it.
-    const word = line.split(' ').find((w) => /[a-z]/i.test(w))!;
-    const digits = Number(line.match(/\d+/)![0]);
-    parsed.rows.push({ line: negIndex, name: word, value: digits, unit: '', ref_low: null, ref_high: null });
-    outputs[0].raw = JSON.stringify(parsed);
+    const line = 'Instrument: Cobas 6000';
+    const req = buildRequests().find((r) => r.lines.includes(line))!;
+    const parsed = JSON.parse(outputs[req.id].raw!);
+    // The name must be on the line and look like a test name to survive the app check.
+    parsed.rows.push({ line: req.lines.indexOf(line), name: 'Cobas', value: 6000, unit: 'mg/dL', ref_low: null, ref_high: null });
+    outputs[req.id].raw = JSON.stringify(parsed);
     expect(scoreOutputs(outputs).falsePositives).toBe(1);
   });
 

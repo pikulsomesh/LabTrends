@@ -26,9 +26,11 @@ jobs:
           - smollm2-360m-q4
           - qwen2.5-0.5b-q4
           - qwen3-0.6b-q4
+          - qwen2.5-0.5b-q8
+          - qwen3-0.6b-q8
           - qwen2.5-1.5b-q4
-        # Lines per model call. One line per call is easier for a small model; ten is faster.
-        batch: [1, 10]
+        # Lines per model call. The first run compared 1 and 10: one line per call won for every model.
+        batch: [1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
