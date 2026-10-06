@@ -1,0 +1,61 @@
+# One-off: drafts a GitHub Release from the APK already built on the merged pull request, when
+# release/tag.txt changes on a claude/** branch. Same steps as publish-release.yml (which runs on a
+# v* tag) for the case where creating a tag directly is not possible. It builds nothing.
+name: Publish release from branch
+
+on:
+  push:
+    branches: ['claude/**']
+    paths: ['release/tag.txt']
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the matching build
+        id: find
+        run: |
+          set -euo pipefail
+          TAG=$(tr -d '[:space:]' < release/tag.txt)
+          case "$TAG" in v[0-9]*) ;; *) echo "::error::release/tag.txt must hold a version like v1.0.0"; exit 1;; esac
+          MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          MAIN_TREE=$(gh api "repos/$GITHUB_REPOSITORY/commits/$MAIN_SHA" --jq .commit.tree.sha)
+          echo "Publishing $TAG from main $MAIN_SHA (tree $MAIN_TREE)"
+          RUN=""
+          while read -r id sha; do
+            tree=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq .commit.tree.sha 2>/dev/null || true)
+            echo "run $id ($sha): tree ${tree:-unknown}"
+            if [ "$tree" = "$MAIN_TREE" ]; then RUN=$id; break; fi
+          done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?status=success&per_page=50" \
+                     --jq '.workflow_runs[] | "\(.id) \(.head_sha)"')
+          if [ -z "$RUN" ]; then
+            echo "::error::No successful Release APK run has the same files as main."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "main=$MAIN_SHA" >> "$GITHUB_OUTPUT"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Download the APK
+        run: gh run download "${{ steps.find.outputs.run }}" --repo "$GITHUB_REPOSITORY" --name labtrends-apk --dir dist
+
+      - name: Check the download
+        run: |
+          set -euo pipefail
+          cd dist
+          ls -l
+          sha256sum -c SHA256SUMS
+
+      - name: Draft GitHub Release
+        run: |
+          gh release create "${{ steps.find.outputs.tag }}" dist/* --repo "$GITHUB_REPOSITORY" --draft \
+            --target "${{ steps.find.outputs.main }}" --title "${{ steps.find.outputs.tag }}" \
+            --notes "Release APK for arm64-v8a, built and smoke-tested on the pull request merged as this commit. Includes the built-in Qwen3-0.6B model. Verify with SHA256SUMS."
