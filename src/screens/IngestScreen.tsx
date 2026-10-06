@@ -7,7 +7,7 @@ import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from 'rea
 import { useSecureScreen } from '../components/useSecureScreen';
 import VerifyForm from '../components/VerifyForm';
 import { extractReport, type Extraction, type ExtractedRow } from '../ai/extract';
-import { importedModel, importModel, loadSlm, removeModel, type ModelInfo } from '../ai/model';
+import { activeModel, importModel, loadSlm, removeModel, type ModelInfo } from '../ai/model';
 import { appendPages, ingest, type Extracted, type IngestInput } from '../ingest/ingest';
 import { deviceDeps, pickImages, pickPdf, takePhoto } from '../ingest/native';
 import { useActiveProfile } from '../state/ActiveProfile';
@@ -43,7 +43,7 @@ export default function IngestScreen({ onDone }: Props) {
   const [result, setResult] = useState<Extracted | null>(null);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [model, setModel] = useState<ModelInfo | null>(() => importedModel());
+  const [model, setModel] = useState<ModelInfo | null>(() => activeModel());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +64,7 @@ export default function IngestScreen({ onDone }: Props) {
 
   async function extract(text: string, m: ModelInfo | null) {
     setExtraction(null);
-    setExtraction(await extractReport(text, m ? () => loadSlm(m.uri) : null));
+    setExtraction(await extractReport(text, m ? () => loadSlm(m) : null));
   }
 
   const add = (pick: Picker, append: boolean) =>
@@ -91,7 +91,7 @@ export default function IngestScreen({ onDone }: Props) {
 
   function onRemoveModel() {
     removeModel();
-    setModel(null);
+    setModel(activeModel());
   }
 
   function discard() {
@@ -181,11 +181,17 @@ export default function IngestScreen({ onDone }: Props) {
       )}
 
       <View style={styles.model}>
-        <Text style={styles.small}>
-          {model ? `Local model imported (${mb(model.sizeBytes)}).` : 'No local model. Values are read by rules only.'}
-        </Text>
-        <Button title={model ? 'Replace model' : 'Import model (.gguf)'} disabled={!!busy} onPress={onImportModel} />
-        {model && <Button title="Remove model" disabled={!!busy} onPress={onRemoveModel} />}
+        {model?.bundled ? (
+          <Text style={styles.small}>Built-in local model ready. Values it reads still go through review.</Text>
+        ) : (
+          <>
+            <Text style={styles.small}>
+              {model ? `Local model imported (${mb(model.sizeBytes)}).` : 'No local model. Values are read by rules only.'}
+            </Text>
+            <Button title={model ? 'Replace model' : 'Import model (.gguf)'} disabled={!!busy} onPress={onImportModel} />
+            {model && <Button title="Remove model" disabled={!!busy} onPress={onRemoveModel} />}
+          </>
+        )}
       </View>
 
       {busy && (

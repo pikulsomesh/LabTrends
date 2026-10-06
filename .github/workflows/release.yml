@@ -34,7 +34,17 @@ jobs:
 
       - run: npm ci
       - run: npm run check:network
-      - run: npx expo prebuild --platform android --no-install
+
+      # The fallback model ships inside the APK so the app works fully offline with no import
+      # (guardrail 1). It is fetched here, on the runner, and never committed.
+      - name: Fetch the bundled model
+        run: ./scripts/fetch-slm.sh "$RUNNER_TEMP/slm/model.gguf"
+
+      - name: Prebuild
+        env:
+          LABTRENDS_SLM_GGUF: ${{ runner.temp }}/slm/model.gguf
+          EXPO_PUBLIC_BUNDLED_SLM: slm/model.gguf
+        run: npx expo prebuild --platform android --no-install
 
       # Two workers and a capped heap keep the 16 GB runner from running out of memory during the
       # native (CMake/llama.cpp) compile. The log goes to a file so it survives a lost runner.
@@ -42,6 +52,7 @@ jobs:
         working-directory: android
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2
+          EXPO_PUBLIC_BUNDLED_SLM: slm/model.gguf
         run: |
           set -o pipefail
           ./gradlew :app:assembleRelease --no-daemon --max-workers=2 --console=plain 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
@@ -70,6 +81,12 @@ jobs:
             echo "::error::Release APK ships native libraries for ABIs other than arm64-v8a"
             exit 1
           fi
+          if ! unzip -Z1 "$APK" | grep -qx 'assets/slm/model.gguf'; then
+            echo "::error::Release APK does not contain the bundled model"
+            exit 1
+          fi
+          # Stored, not deflated: llama.cpp reads the asset in place.
+          unzip -Zv "$APK" assets/slm/model.gguf | grep -i 'compression method' | grep -qi 'none (stored)'
 
       - name: Sign
         env:
