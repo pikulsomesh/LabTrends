@@ -39,7 +39,8 @@
           "microphonePermission": false
         }
       ],
-      "./plugins/withReleaseNoNetwork"
+      "./plugins/withReleaseNoNetwork",
+      "./plugins/withBundledSlm"
     ],
     "platforms": [
       "android"
