@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Runs inside reactivecircus/android-emulator-runner (see .github/workflows/release.yml and
 # emulator.yml): installs the release APK, puts the scanned fixture in Downloads, and runs the
-# Maestro smoke flow. The APK is arm64-only; the x86_64 Google APIs image runs it through
-# Android's ARM translation. On failure it prints what the app and the screen were doing, because
+# Maestro smoke flow. The APK is the x86_64 build made for this test (the release APK is
+# arm64-only and the CI emulator has no ARM translation). On failure it prints what the app and the screen were doing, because
 # the screenshots live in an artifact that is not always reachable.
 set -euxo pipefail
 OUT="${1:-emulator-results}"

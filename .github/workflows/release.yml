@@ -109,15 +109,49 @@ jobs:
 
   # Installs the APK built above on an Android emulator and runs the Maestro smoke flow in
   # .maestro/smoke.yaml. Screenshots, the Maestro report and logcat are uploaded either way.
+  # The release APK is arm64-only and the CI emulator is x86_64 without ARM translation, so the
+  # emulator test runs a second build of the same code for x86_64. It is never published.
+  emulator-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Build x86_64 release APK for the emulator
+        working-directory: android
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.workers.max=2
+        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64 --no-daemon --max-workers=2 --console=plain
+      - name: Check the build holds x86_64 libraries
+        run: |
+          unzip -Z1 android/app/build/outputs/apk/release/app-release.apk | sed -n 's#^lib/\([^/]*\)/.*#\1#p' | sort -u | tee abis.txt
+          grep -qx x86_64 abis.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: labtrends-emulator-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
   emulator:
-    needs: android
+    needs: emulator-apk
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: labtrends-apk
+          name: labtrends-emulator-apk
           path: apk
       - uses: actions/setup-java@v4
         with:
