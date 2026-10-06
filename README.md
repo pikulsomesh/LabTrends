@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Phase 4 (ingestion: camera, photos and PDF to in-memory text). See PLAN.md and docs/ARCHITECTURE.md.
+Phase 5 (extraction: parser first, local model for unread lines). See PLAN.md and docs/ARCHITECTURE.md.

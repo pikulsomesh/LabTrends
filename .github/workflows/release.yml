@@ -4,16 +4,9 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
-  # Also build on PRs that change native or build config, to catch breakage before a release.
+  # Every PR builds the release APK before it merges: JavaScript changes can break the release
+  # bundle too, not only native or build config changes.
   pull_request:
-    paths:
-      - app.json
-      - eas.json
-      - package.json
-      - package-lock.json
-      - plugins/**
-      - modules/**
-      - .github/workflows/release.yml
 
 permissions:
   contents: write
