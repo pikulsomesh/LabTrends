@@ -2,7 +2,7 @@
 // and each marker's latest value with its date. Tapping a marker opens its trend chart. Values are
 // listed as recorded, never flagged against their range (CLAUDE.md guardrail 4).
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { sharePdfSummary } from '../backup/device';
 import Disclaimer from '../components/Disclaimer';
 import ProfileNameModal from '../components/ProfileNameModal';
@@ -10,6 +10,8 @@ import { useSecureScreen } from '../components/useSecureScreen';
 import { getLatest, listMarkers, type MarkerSummary, type SeriesPoint } from '../db';
 import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
 import { panelOf, PANEL_ORDER } from '../utils/panels';
+import { Body, Button, Card, Chip, Screen, Small, Title } from '../ui';
+import { color, radius, space, tintFor } from '../ui/theme';
 
 interface Props {
   onSwitchProfile(): void;
@@ -21,6 +23,13 @@ interface Props {
 type Row = MarkerSummary & { latest: SeriesPoint | null; panel: string };
 
 const ALL = 'All';
+
+/** Two or three characters for a marker's badge: short names as they are, long ones by initials. */
+function abbreviate(key: string) {
+  if (key.length <= 4) return key;
+  const words = key.split(/[\s/]+/).filter(Boolean);
+  return words.length > 1 ? words.map((w) => w[0]).join('').slice(0, 3).toUpperCase() : key.slice(0, 2);
+}
 
 export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpenMarker, onOpenChat }: Props) {
   useSecureScreen();
@@ -83,68 +92,73 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
   }
 
   return (
-    <View style={styles.root}>
-      <Text style={styles.title}>{profile.name}</Text>
-      <View style={styles.actions}>
-        <View style={styles.action}>
-          <Button title="Add a report" onPress={onAddReport} />
+    <Screen>
+      <View style={styles.header}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{profile.name.trim().charAt(0).toUpperCase()}</Text>
         </View>
-        <View style={styles.action}>
-          <Button title="Ask" onPress={onOpenChat} />
+        <View style={styles.headerText}>
+          <Small>Profile</Small>
+          <Title>{profile.name}</Title>
         </View>
       </View>
 
+      <View style={styles.actions}>
+        <Button title="Add a report" onPress={onAddReport} style={styles.action} />
+        <Button title="Ask" variant="soft" onPress={onOpenChat} style={styles.action} />
+      </View>
+      {rows && rows.length > 0 && (
+        <Button
+          title={exporting ? 'Making PDF…' : 'Export PDF summary'}
+          variant="soft"
+          loading={exporting}
+          onPress={exportPdf}
+        />
+      )}
+
       {rows == null ? null : rows.length === 0 ? (
-        <Text style={styles.body}>No values yet. Add a report to start.</Text>
+        <Card tint={color.primarySoft}>
+          <Body>No values yet. Add a report to start.</Body>
+        </Card>
       ) : (
         <>
           <ScrollView horizontal style={styles.tabs} contentContainerStyle={styles.tabsContent} showsHorizontalScrollIndicator={false}>
             {tabs.map((t) => (
-              <Pressable
-                key={t}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: t === tab }}
-                onPress={() => setTab(t)}
-                style={[styles.tab, t === tab && styles.tabOn]}
-              >
-                <Text style={[styles.tabText, t === tab && styles.tabTextOn]}>{t}</Text>
-              </Pressable>
+              <Chip key={t} label={t} selected={t === tab} tint={t === ALL ? undefined : tintFor(t)} onPress={() => setTab(t)} />
             ))}
           </ScrollView>
-          <FlatList
-            style={styles.list}
-            data={shown}
-            keyExtractor={(r) => r.key}
-            renderItem={({ item }) => (
-              <Pressable accessibilityRole="button" onPress={() => onOpenMarker(item.key)} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+          {shown.map((item) => {
+            const tint = tintFor(item.panel);
+            return (
+              <Card key={item.key} style={styles.row} onPress={() => onOpenMarker(item.key)}>
+                <View style={[styles.badge, { backgroundColor: tint.bg }]}>
+                  <Text style={[styles.badgeText, { color: tint.ink }]} numberOfLines={1}>
+                    {abbreviate(item.key)}
+                  </Text>
+                </View>
                 <View style={styles.rowMain}>
                   <Text style={styles.marker}>{item.key}</Text>
-                  <Text style={styles.small}>
+                  <Small>
                     {item.count} value{item.count === 1 ? '' : 's'}, latest {item.latestDate}
-                  </Text>
+                  </Small>
                 </View>
                 {item.latest && (
                   <Text style={styles.value}>
-                    {item.latest.value} {item.latest.unit ?? ''}
+                    {item.latest.value} <Text style={styles.unit}>{item.latest.unit ?? ''}</Text>
                   </Text>
                 )}
-              </Pressable>
-            )}
-          />
+              </Card>
+            );
+          })}
         </>
       )}
 
       <View style={styles.footer}>
         <View style={styles.actions}>
-          <View style={styles.action}>
-            <Button title="Switch profile" onPress={onSwitchProfile} />
-          </View>
-          <View style={styles.action}>
-            <Button title="Rename" onPress={() => setRenaming(true)} />
-          </View>
+          <Button title="Switch profile" variant="ghost" onPress={onSwitchProfile} style={styles.action} />
+          <Button title="Rename" variant="ghost" onPress={() => setRenaming(true)} style={styles.action} />
         </View>
-        {rows && rows.length > 0 && <Button title={exporting ? 'Making PDF…' : 'Export PDF summary'} disabled={exporting} onPress={exportPdf} />}
-        <Button title="Delete profile" color="#b00020" onPress={confirmDelete} />
+        <Button title="Delete profile" variant="danger" onPress={confirmDelete} />
         <Disclaimer />
       </View>
       <ProfileNameModal
@@ -155,28 +169,25 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
         onSubmit={(name) => rename(profile.id, name)}
         onClose={() => setRenaming(false)}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: 16, paddingTop: 48, gap: 12 },
-  title: { fontSize: 28, fontWeight: '600' },
-  body: { fontSize: 16, color: '#333' },
-  small: { fontSize: 12, color: '#555' },
-  actions: { flexDirection: 'row', gap: 12 },
-  action: { flex: 1 },
-  tabs: { flexGrow: 0 },
-  tabsContent: { gap: 8 },
-  tab: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#bbb' },
-  tabOn: { backgroundColor: '#1f5fa8', borderColor: '#1f5fa8' },
-  tabText: { fontSize: 14, color: '#333' },
-  tabTextOn: { color: '#fff' },
-  list: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#ccc' },
-  rowPressed: { backgroundColor: '#f2f2f2' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#E6E1FF', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 24, fontWeight: '700', color: '#4B3FAE' },
+  headerText: { flex: 1, gap: 0 },
+  actions: { flexDirection: 'row', gap: space.md },
+  action: { flex: 1, paddingHorizontal: space.md },
+  tabs: { flexGrow: 0, marginHorizontal: -space.xl },
+  tabsContent: { gap: space.sm, paddingHorizontal: space.xl },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
+  badge: { width: 46, height: 46, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 13, fontWeight: '800' },
   rowMain: { flex: 1, gap: 2 },
-  marker: { fontSize: 16, color: '#111' },
-  value: { fontSize: 16, color: '#111', fontVariant: ['tabular-nums'] },
-  footer: { gap: 8, paddingBottom: 8 },
+  marker: { fontSize: 17, fontWeight: '600', color: color.ink },
+  value: { fontSize: 18, fontWeight: '700', color: color.ink, fontVariant: ['tabular-nums'] },
+  unit: { fontSize: 12, fontWeight: '500', color: color.inkSoft },
+  footer: { gap: space.md, marginTop: space.lg },
 });

@@ -2,7 +2,7 @@
 // templates over the active profile's saved values, some with an inline chart. Nothing is sent
 // anywhere and no medical text is generated. The conversation is not saved.
 import { useEffect, useRef, useState } from 'react';
-import { Button, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Disclaimer from '../components/Disclaimer';
 import TrendChart from '../components/TrendChart';
 import { useSecureScreen } from '../components/useSecureScreen';
@@ -10,6 +10,8 @@ import { HELP_REPLY, type Answer } from '../chat/answer';
 import { ask, loadMarkerIndex } from '../chat/chat';
 import type { MarkerIndex } from '../chat/intent';
 import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
+import { Button, Title } from '../ui';
+import { color, radius, space, topInset } from '../ui/theme';
 
 type Message = { from: 'you'; text: string } | { from: 'app'; answer: Answer };
 
@@ -45,8 +47,14 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior="height">
-      <Text style={styles.title}>Ask about {profile.name}’s values</Text>
-      <ScrollView ref={scroll} style={styles.list} contentContainerStyle={styles.listContent} onContentSizeChange={() => scroll.current?.scrollToEnd()}>
+      <Title>Ask about {profile.name}’s values</Title>
+      <ScrollView
+        ref={scroll}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => scroll.current?.scrollToEnd()}
+      >
         {messages.map((m, i) =>
           m.from === 'you' ? (
             <Text key={i} style={[styles.bubble, styles.you]}>
@@ -66,11 +74,12 @@ export default function ChatScreen() {
           value={text}
           onChangeText={setText}
           placeholder="e.g. ALT trend"
+          placeholderTextColor={color.inkFaint}
           onSubmitEditing={send}
           returnKeyType="send"
           accessibilityLabel="Question"
         />
-        <Button title="Ask" disabled={!index || !text.trim()} onPress={send} />
+        <Button title="Ask" disabled={!index || !text.trim()} onPress={send} style={styles.send} />
       </View>
       <Disclaimer />
     </KeyboardAvoidingView>
@@ -78,14 +87,24 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: 16, paddingTop: 48, gap: 8 },
-  title: { fontSize: 22, fontWeight: '600' },
-  list: { flex: 1 },
-  listContent: { gap: 8, paddingBottom: 8 },
-  bubble: { padding: 10, borderRadius: 10, maxWidth: '92%' },
-  you: { alignSelf: 'flex-end', backgroundColor: '#1f5fa8', color: '#fff', fontSize: 15 },
-  app: { alignSelf: 'flex-start', backgroundColor: '#f0f0f0', width: '92%' },
-  text: { fontSize: 15, color: '#111' },
-  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  input: { flex: 1, borderWidth: 1, borderColor: '#bbb', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, color: '#111' },
+  root: { flex: 1, backgroundColor: color.bg, paddingHorizontal: space.xl, paddingTop: topInset, paddingBottom: space.lg, gap: space.md },
+  list: { flex: 1, marginHorizontal: -space.xl },
+  listContent: { gap: space.md, paddingHorizontal: space.xl, paddingBottom: space.sm },
+  bubble: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.lg, maxWidth: '92%', overflow: 'hidden' },
+  you: { alignSelf: 'flex-end', backgroundColor: color.primary, color: color.onPrimary, fontSize: 16, borderBottomRightRadius: 6 },
+  app: { alignSelf: 'flex-start', backgroundColor: color.surface, width: '92%', borderBottomLeftRadius: 6, gap: space.sm },
+  text: { fontSize: 16, lineHeight: 23, color: color.ink },
+  inputRow: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
+  input: {
+    flex: 1,
+    backgroundColor: color.surface,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: color.line,
+    paddingHorizontal: space.lg,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: color.ink,
+  },
+  send: { paddingHorizontal: space.xl },
 });

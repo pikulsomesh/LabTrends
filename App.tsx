@@ -13,6 +13,7 @@ import SpikeScreen from './src/spike/SpikeScreen';
 import { ActiveProfileProvider, useProfiles } from './src/state/ActiveProfile';
 import { canGoBack, currentRoute, initialNav, navReducer } from './src/state/navigation';
 import { loadSession, type Session } from './src/state/session';
+import { color } from './src/ui/theme';
 
 type Boot = { db: Db; session: Session } | { error: string } | null;
 
@@ -32,7 +33,7 @@ export default function App() {
       <StatusBar style="auto" />
       {boot == null ? (
         <View style={styles.center}>
-          <ActivityIndicator />
+          <ActivityIndicator color={color.primary} />
         </View>
       ) : 'error' in boot ? (
         <View style={styles.center}>
@@ -88,6 +89,6 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  error: { color: '#b00020', textAlign: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: color.bg },
+  error: { color: color.danger, textAlign: 'center' },
 });

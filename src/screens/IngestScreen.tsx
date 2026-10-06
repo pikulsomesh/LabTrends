@@ -3,7 +3,7 @@
 // and save them on the verification form. Text and candidates live in this screen's state only:
 // they are dropped on leaving, and cleared as soon as the report is saved.
 import { useState } from 'react';
-import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSecureScreen } from '../components/useSecureScreen';
 import VerifyForm from '../components/VerifyForm';
 import { extractReport, type Extraction, type ExtractedRow } from '../ai/extract';
@@ -12,6 +12,8 @@ import { appendPages, ingest, type Extracted, type IngestInput } from '../ingest
 import { deviceDeps, pickImages, pickPdf, takePhoto } from '../ingest/native';
 import { useActiveProfile } from '../state/ActiveProfile';
 import { draftFromExtraction, type Draft } from '../verify/draft';
+import { Body, Busy, Button, Card, Heading, Notice, Screen, Small, Title } from '../ui';
+import { color, radius, space } from '../ui/theme';
 
 type Picker = () => Promise<IngestInput | null>;
 
@@ -107,9 +109,9 @@ export default function IngestScreen({ onDone }: Props) {
 
   if (draft) {
     return (
-      <View style={styles.root}>
+      <Screen fixed>
         <VerifyForm profileId={profile.id} initial={draft} onSaved={saved} onBack={() => setDraft(null)} />
-      </View>
+      </Screen>
     );
   }
 
@@ -117,28 +119,28 @@ export default function IngestScreen({ onDone }: Props) {
   const fromModel = extraction?.rows.filter((r) => r.origin === 'slm').length ?? 0;
 
   return (
-    <View style={styles.root}>
-      <Text style={styles.title}>Add a report</Text>
-      <Text style={styles.body}>For {profile.name}. Files are read on this phone, then deleted. Nothing is saved yet.</Text>
+    <Screen>
+      <Title>Add a report</Title>
+      <Body>For {profile.name}. Files are read on this phone, then deleted. Nothing is saved yet.</Body>
 
       {result == null ? (
         <View style={styles.actions}>
           <Button title="Take a photo" disabled={!!busy} onPress={() => add(takePhoto, false)} />
-          <Button title="Choose photos" disabled={!!busy} onPress={() => add(pickImages, false)} />
-          <Button title="Choose a PDF" disabled={!!busy} onPress={() => add(pickPdf, false)} />
+          <Button title="Choose photos" variant="soft" disabled={!!busy} onPress={() => add(pickImages, false)} />
+          <Button title="Choose a PDF" variant="soft" disabled={!!busy} onPress={() => add(pickPdf, false)} />
         </View>
       ) : (
         <>
-          <Text style={styles.body}>
-            {result.pageCount} page{result.pageCount === 1 ? '' : 's'}, {METHOD_LABEL[result.method]}.
-            {extraction &&
-              ` ${extraction.rows.length} value${extraction.rows.length === 1 ? '' : 's'} found` +
-                (fromModel ? `, ${fromModel} by the local model` : '') +
-                (extraction.date ? `. Report date ${extraction.date}.` : '. No report date found.')}
-          </Text>
+          <Card tint={color.primarySoft}>
+            <Text style={styles.summary}>
+              {result.pageCount} page{result.pageCount === 1 ? '' : 's'}, {METHOD_LABEL[result.method]}.
+              {extraction &&
+                ` ${extraction.rows.length} value${extraction.rows.length === 1 ? '' : 's'} found` +
+                  (fromModel ? `, ${fromModel} by the local model` : '') +
+                  (extraction.date ? `. Report date ${extraction.date}.` : '. No report date found.')}
+            </Text>
+          </Card>
           <View style={styles.actions}>
-            {canAppend && <Button title="Add a page: take a photo" disabled={!!busy} onPress={() => add(takePhoto, true)} />}
-            {canAppend && <Button title="Add a page: choose photos" disabled={!!busy} onPress={() => add(pickImages, true)} />}
             {extraction && (
               <Button
                 title="Review and save"
@@ -146,76 +148,59 @@ export default function IngestScreen({ onDone }: Props) {
                 onPress={() => setDraft(draftFromExtraction(extraction, result.fileHashes))}
               />
             )}
-            <Button title="Discard and start over" color="#b00020" disabled={!!busy} onPress={discard} />
+            {canAppend && <Button title="Add a page: take a photo" variant="soft" disabled={!!busy} onPress={() => add(takePhoto, true)} />}
+            {canAppend && <Button title="Add a page: choose photos" variant="soft" disabled={!!busy} onPress={() => add(pickImages, true)} />}
+            <Button title="Discard and start over" variant="danger" disabled={!!busy} onPress={discard} />
           </View>
-          {extraction && (
-            <FlatList
-              style={styles.list}
-              data={extraction.rows}
-              keyExtractor={(_, i) => String(i)}
-              renderItem={({ item }) => (
-                <Text style={styles.row}>
+          {extraction && extraction.rows.length > 0 && (
+            <Card>
+              <Heading>Found so far</Heading>
+              {extraction.rows.map((item, i) => (
+                <Text key={i} style={styles.row}>
                   {item.name}: {item.value} {item.unit}
                   {rangeLabel(item)}
                   {item.origin === 'slm' ? '  [model]' : ''}
                 </Text>
-              )}
-              ListFooterComponent={
-                extraction.unparsed.length ? (
-                  <View style={styles.unparsed}>
-                    <Text style={styles.body}>
-                      {extraction.unparsed.length} line{extraction.unparsed.length === 1 ? '' : 's'} not read.{' '}
-                      {SLM_NOTE[extraction.slm]}
-                    </Text>
-                    {extraction.unparsed.map((l, i) => (
-                      <Text key={i} style={styles.mono}>
-                        {l}
-                      </Text>
-                    ))}
-                  </View>
-                ) : null
-              }
-            />
+              ))}
+            </Card>
+          )}
+          {extraction && extraction.unparsed.length > 0 && (
+            <Card>
+              <Body>
+                {extraction.unparsed.length} line{extraction.unparsed.length === 1 ? '' : 's'} not read. {SLM_NOTE[extraction.slm]}
+              </Body>
+              {extraction.unparsed.map((l, i) => (
+                <Text key={i} style={styles.mono}>
+                  {l}
+                </Text>
+              ))}
+            </Card>
           )}
         </>
       )}
 
       <View style={styles.model}>
         {model?.bundled ? (
-          <Text style={styles.small}>Built-in local model ready. Values it reads still go through review.</Text>
+          <Small>Built-in local model ready. Values it reads still go through review.</Small>
         ) : (
           <>
-            <Text style={styles.small}>
-              {model ? `Local model imported (${mb(model.sizeBytes)}).` : 'No local model. Values are read by rules only.'}
-            </Text>
-            <Button title={model ? 'Replace model' : 'Import model (.gguf)'} disabled={!!busy} onPress={onImportModel} />
-            {model && <Button title="Remove model" disabled={!!busy} onPress={onRemoveModel} />}
+            <Small>{model ? `Local model imported (${mb(model.sizeBytes)}).` : 'No local model. Values are read by rules only.'}</Small>
+            <Button title={model ? 'Replace model' : 'Import model (.gguf)'} variant="ghost" disabled={!!busy} onPress={onImportModel} />
+            {model && <Button title="Remove model" variant="ghost" disabled={!!busy} onPress={onRemoveModel} />}
           </>
         )}
       </View>
 
-      {busy && (
-        <View style={styles.busy}>
-          <ActivityIndicator />
-          <Text style={styles.small}>{busy}</Text>
-        </View>
-      )}
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
+      {busy && <Busy label={busy} />}
+      {error && <Notice tone="error">{error}</Notice>}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: 24, paddingTop: 56, gap: 12 },
-  title: { fontSize: 28, fontWeight: '600' },
-  body: { fontSize: 16, color: '#333' },
-  small: { fontSize: 13, color: '#555' },
-  actions: { gap: 12 },
-  list: { flex: 1 },
-  row: { fontSize: 15, paddingVertical: 4, color: '#222' },
-  unparsed: { marginTop: 12, gap: 4 },
-  mono: { fontFamily: 'monospace', fontSize: 12, color: '#444' },
-  model: { gap: 8 },
-  busy: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  error: { color: '#b00020' },
+  actions: { gap: space.md },
+  summary: { fontSize: 16, lineHeight: 23, color: color.ink },
+  row: { fontSize: 15, paddingVertical: 4, color: color.ink },
+  mono: { fontFamily: 'monospace', fontSize: 12, color: color.inkSoft, backgroundColor: color.bg, padding: space.sm, borderRadius: radius.sm },
+  model: { gap: space.sm, marginTop: space.sm },
 });

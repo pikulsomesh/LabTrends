@@ -2,11 +2,13 @@
 // came from shown above it. Nothing reaches the database until the user taps Save, and then only
 // through saveDraft. Values are shown as printed; no row is labelled good or bad (guardrail 4).
 import { useEffect, useState } from 'react';
-import { Alert, Button, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import type { Report } from '../db';
 import { useProfiles } from '../state/ActiveProfile';
 import { addManualRow, removeRow, updateRow, type Draft, type DraftErrors, type DraftRow } from '../verify/draft';
 import { findDuplicates, saveDraft } from '../verify/save';
+import { Body, Button, Card, Heading, Input, Notice, Small, Title } from '../ui';
+import { color, radius, space } from '../ui/theme';
 
 interface Props {
   profileId: number;
@@ -56,27 +58,29 @@ export default function VerifyForm({ profileId, initial, onSaved, onBack }: Prop
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Check and save</Text>
-      <Text style={styles.body}>Compare each value with the line from the report. Fix anything that was misread, then save.</Text>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <Title>Check and save</Title>
+      <Body>Compare each value with the line from the report. Fix anything that was misread, then save.</Body>
 
       {duplicates.length > 0 && (
-        <Text style={styles.warning}>
+        <Notice>
           This file was already saved for this profile ({duplicates.map((d) => d.date).join(', ')}). Saving again adds a second copy.
-        </Text>
+        </Notice>
       )}
 
-      <Field label="Collection date (yyyy-mm-dd)" value={draft.date} onChange={(date) => setDraft({ ...draft, date })} />
-      {err('date')}
-      <Field label="Lab name (optional)" value={draft.labName} onChange={(labName) => setDraft({ ...draft, labName })} />
-      <Field label="Category (optional)" value={draft.category} onChange={(category) => setDraft({ ...draft, category })} />
+      <Card>
+        <Field label="Collection date (yyyy-mm-dd)" value={draft.date} onChange={(date) => setDraft({ ...draft, date })} />
+        {err('date')}
+        <Field label="Lab name (optional)" value={draft.labName} onChange={(labName) => setDraft({ ...draft, labName })} />
+        <Field label="Category (optional)" value={draft.category} onChange={(category) => setDraft({ ...draft, category })} />
+      </Card>
 
-      <Text style={styles.heading}>Values ({draft.rows.filter((r) => r.included).length} to save)</Text>
+      <Heading>Values ({draft.rows.filter((r) => r.included).length} to save)</Heading>
       {err('rows')}
       {draft.rows.map((row) => (
-        <View key={row.key} style={[styles.card, !row.included && styles.cardOff]}>
+        <Card key={row.key} style={!row.included && styles.cardOff}>
           {row.sourceLine ? <Text style={styles.source}>{row.sourceLine}</Text> : null}
-          {ORIGIN_LABEL[row.origin] ? <Text style={styles.small}>{ORIGIN_LABEL[row.origin]}</Text> : null}
+          {ORIGIN_LABEL[row.origin] ? <Small>{ORIGIN_LABEL[row.origin]}</Small> : null}
           <Field label="Test name" value={row.name} onChange={(name) => edit(row, { name })} />
           {err(`${row.key}.name`)}
           <View style={styles.pair}>
@@ -90,34 +94,39 @@ export default function VerifyForm({ profileId, initial, onSaved, onBack }: Prop
           </View>
           {err(`${row.key}.refLow`)}
           {err(`${row.key}.refHigh`)}
-          {row.rawRefText ? <Text style={styles.small}>Printed range: {row.rawRefText}</Text> : null}
+          {row.rawRefText ? <Small>Printed range: {row.rawRefText}</Small> : null}
           <View style={styles.rowActions}>
             <View style={styles.toggle}>
-              <Switch value={row.included} onValueChange={(included) => edit(row, { included })} />
-              <Text style={styles.small}>{row.included ? 'Save this value' : 'Skipped'}</Text>
+              <Switch
+                value={row.included}
+                onValueChange={(included) => edit(row, { included })}
+                trackColor={{ false: color.line, true: color.primarySoft }}
+                thumbColor={row.included ? color.primary : '#fff'}
+              />
+              <Small>{row.included ? 'Save this value' : 'Skipped'}</Small>
             </View>
-            <Button title="Remove" color="#b00020" onPress={() => setDraft((d) => removeRow(d, row.key))} />
+            <Button title="Remove" variant="danger" style={styles.small} onPress={() => setDraft((d) => removeRow(d, row.key))} />
           </View>
-        </View>
+        </Card>
       ))}
 
       {draft.unparsed.length > 0 && (
         <>
-          <Text style={styles.heading}>Lines not read</Text>
+          <Heading>Lines not read</Heading>
           {draft.unparsed.map((line, i) => (
-            <View key={`${i}:${line}`} style={styles.card}>
+            <Card key={`${i}:${line}`}>
               <Text style={styles.source}>{line}</Text>
-              <Button title="Enter this value" onPress={() => setDraft((d) => addManualRow(d, line))} />
-            </View>
+              <Button title="Enter this value" variant="soft" onPress={() => setDraft((d) => addManualRow(d, line))} />
+            </Card>
           ))}
         </>
       )}
 
-      <Button title="Add a value by hand" onPress={() => setDraft((d) => addManualRow(d))} />
-      {hasErrors && <Text style={styles.error}>Fix the fields marked above, then save.</Text>}
+      <Button title="Add a value by hand" variant="soft" onPress={() => setDraft((d) => addManualRow(d))} />
+      {hasErrors && <Notice tone="error">Fix the fields marked above, then save.</Notice>}
       <View style={styles.actions}>
         <Button title={saving ? 'Saving…' : 'Save report'} disabled={saving} onPress={save} />
-        <Button title="Back" disabled={saving} onPress={onBack} />
+        <Button title="Back" variant="ghost" disabled={saving} onPress={onBack} />
       </View>
     </ScrollView>
   );
@@ -125,36 +134,27 @@ export default function VerifyForm({ profileId, initial, onSaved, onBack }: Prop
 
 function Field({ label, value, onChange, numeric }: { label: string; value: string; onChange(v: string): void; numeric?: boolean }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.small}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={numeric ? 'decimal-pad' : 'default'}
-        autoCorrect={false}
-        accessibilityLabel={label}
-      />
-    </View>
+    <Input
+      label={label}
+      value={value}
+      onChangeText={onChange}
+      keyboardType={numeric ? 'decimal-pad' : 'default'}
+      autoCorrect={false}
+      style={styles.input}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { gap: 10, paddingBottom: 48 },
-  title: { fontSize: 24, fontWeight: '600' },
-  heading: { fontSize: 18, fontWeight: '600', marginTop: 8 },
-  body: { fontSize: 15, color: '#333' },
-  small: { fontSize: 12, color: '#555' },
-  warning: { fontSize: 14, color: '#7a4b00', backgroundColor: '#fff4e0', padding: 8, borderRadius: 4 },
-  card: { borderWidth: StyleSheet.hairlineWidth, borderColor: '#999', borderRadius: 6, padding: 10, gap: 6 },
-  cardOff: { opacity: 0.5 },
-  source: { fontFamily: 'monospace', fontSize: 12, color: '#222', backgroundColor: '#f2f2f2', padding: 6 },
-  pair: { flexDirection: 'row', gap: 8 },
-  field: { flex: 1, gap: 2 },
-  input: { borderWidth: 1, borderColor: '#bbb', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 6, fontSize: 15, color: '#111' },
+  root: { flex: 1, marginHorizontal: -space.xl },
+  content: { gap: space.md, paddingHorizontal: space.xl, paddingBottom: 48 },
+  cardOff: { opacity: 0.55 },
+  source: { fontFamily: 'monospace', fontSize: 12, color: color.ink, backgroundColor: color.bg, padding: space.sm, borderRadius: radius.sm },
+  pair: { flexDirection: 'row', gap: space.sm },
+  input: { paddingVertical: 10, fontSize: 15 },
   rowActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actions: { gap: 12, marginTop: 8 },
-  error: { color: '#b00020', fontSize: 13 },
+  small: { minHeight: 40, paddingVertical: 6, paddingHorizontal: space.lg },
+  actions: { gap: space.sm, marginTop: space.sm },
+  error: { color: color.danger, fontSize: 13 },
 });

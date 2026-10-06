@@ -9,9 +9,9 @@ import type { SeriesPoint } from '../db';
 
 const HEIGHT = 180;
 const Y_LABEL_WIDTH = 44;
-const LINE = '#1f5fa8';
-const BAND = 'rgba(31, 95, 168, 0.10)';
-const BOUND = 'rgba(31, 95, 168, 0.55)';
+const LINE = '#6A5FDB';
+const BAND = 'rgba(106, 95, 219, 0.12)';
+const BOUND = 'rgba(106, 95, 219, 0.55)';
 
 export default function TrendChart({ points }: { points: SeriesPoint[] }) {
   const [width, setWidth] = useState(0);
@@ -50,13 +50,15 @@ export default function TrendChart({ points }: { points: SeriesPoint[] }) {
           xAxisLabelTextStyle={styles.axis}
           formatYLabel={(l) => String(Number(Number(l).toPrecision(6)))}
           color={LINE}
-          thickness={2}
+          thickness={3}
+          curved
+          curvature={0.15}
           dataPointsColor={LINE}
-          dataPointsRadius={4}
-          textColor="#222"
+          dataPointsRadius={5}
+          textColor="#25233A"
           textFontSize={11}
           textShiftY={-6}
-          rulesColor="#e6e6e6"
+          rulesColor="#EEEBFA"
           showReferenceLine1={lowLine.show}
           referenceLine1Position={lowLine.position}
           referenceLine1Config={lowLine.config}
@@ -91,7 +93,7 @@ export default function TrendChart({ points }: { points: SeriesPoint[] }) {
 }
 
 const styles = StyleSheet.create({
-  axis: { fontSize: 10, color: '#555' },
+  axis: { fontSize: 10, color: '#8C89A6' },
   boundLabel: { fontSize: 9, color: BOUND, top: -12, left: 2 },
-  caption: { fontSize: 12, color: '#555', marginTop: 6 },
+  caption: { fontSize: 12, color: '#5E5B78', marginTop: 6 },
 });
