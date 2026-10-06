@@ -101,11 +101,11 @@ describe('extractReport', () => {
     expect(session.release).toHaveBeenCalledTimes(1);
   });
 
-  it('sends unparsed lines in batches', async () => {
+  it('sends unparsed lines in batches of SLM_BATCH', async () => {
     const lines = Array.from({ length: SLM_BATCH + 3 }, (_, i) => `Marker${i}           ${i + 1}.4   9d        1.0 - 99.0`);
     const { session, load } = fakeSlm(() => '{"rows":[]}');
     const r = await extractReport(lines.join('\n'), load);
-    expect(session.complete).toHaveBeenCalledTimes(2);
+    expect(session.complete).toHaveBeenCalledTimes(Math.ceil(lines.length / SLM_BATCH));
     expect(r.unparsed).toHaveLength(lines.length);
   });
 
