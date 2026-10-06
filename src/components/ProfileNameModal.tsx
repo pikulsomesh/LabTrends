@@ -1,7 +1,9 @@
 // Create-profile and rename-profile modal. The name rules (trimmed, 1 to 60 characters) are
 // enforced again in src/db/profiles.ts; this only gives quick feedback.
 import { useEffect, useState } from 'react';
-import { Button, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
+import { Button, Input, Notice, Title } from '../ui';
+import { color, radius, shadow, space } from '../ui/theme';
 
 export const MAX_NAME = 60;
 
@@ -43,9 +45,8 @@ export default function ProfileNameModal({ visible, title, initialName = '', sub
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <TextInput
-            style={styles.input}
+          <Title>{title}</Title>
+          <Input
             value={name}
             onChangeText={(t) => {
               setName(t);
@@ -62,9 +63,9 @@ export default function ProfileNameModal({ visible, title, initialName = '', sub
             onSubmitEditing={submit}
             editable={!busy}
           />
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <Notice tone="error">{error}</Notice>}
           <View style={styles.actions}>
-            <Button title="Cancel" onPress={onClose} disabled={busy} />
+            <Button title="Cancel" variant="ghost" onPress={onClose} disabled={busy} />
             <Button title={submitLabel} onPress={submit} disabled={busy || !name.trim()} />
           </View>
         </View>
@@ -74,10 +75,7 @@ export default function ProfileNameModal({ visible, title, initialName = '', sub
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 20, gap: 12 },
-  title: { fontSize: 20, fontWeight: '600' },
-  input: { borderWidth: 1, borderColor: '#bbb', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  error: { color: '#b00020' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(37, 35, 58, 0.45)', justifyContent: 'center', padding: space.xl },
+  card: { backgroundColor: color.surface, borderRadius: radius.lg + 4, padding: space.xl, gap: space.lg, ...shadow },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm },
 });
