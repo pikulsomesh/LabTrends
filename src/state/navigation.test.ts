@@ -45,4 +45,12 @@ describe('navigation', () => {
     expect(names(s)).toEqual(['profiles', 'profileHome', 'ingest']);
     expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles', 'profileHome']);
   });
+
+  it('opens a marker or the chat above the profile home', () => {
+    const m = navReducer(initialNav(2), { type: 'openMarker', key: 'ALT' });
+    expect(currentRoute(m)).toEqual({ name: 'marker', key: 'ALT' });
+    const c = navReducer(m, { type: 'openChat' });
+    expect(names(c)).toEqual(['profiles', 'profileHome', 'chat']);
+    expect(names(navReducer(c, { type: 'back' }))).toEqual(['profiles', 'profileHome']);
+  });
 });

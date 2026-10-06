@@ -5,15 +5,16 @@
 | Path | What lives there | Phase |
 |---|---|---|
 | `App.tsx` | Root component. Sweeps leftover import files from the cache, opens the database, then shows the screen stack (landing, profile home, add report; dev builds can open the Phase 0 spike). | 1, 3, 4 |
-| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen`, `IngestScreen` (add a report). | 3+ |
+| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen` (dashboard), `IngestScreen` (add, check and save a report), `MarkerScreen` (trend chart and values), `ChatScreen`. | 3+ |
+| `src/dashboard` | Pure chart helpers: unit grouping (units are never converted), y-axis scale, date labels. | 7 |
 | `src/state` | Active profile (`ActiveProfileProvider`, remembered in the `app_state` table) and the screen-stack reducer. No navigation library, so no extra native modules. | 3 |
-| `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, `VerifyForm`, later charts). | 3+ |
+| `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, `VerifyForm`, `TrendChart`, `useSecureScreen`). | 3+ |
 | `src/verify` | Verification: extraction output as an editable draft, validation, duplicate lookup by file hash, and `saveDraft`, the only save path for lab values. | 6 |
 | `src/db` | SQLite schema, migrations, CRUD, alias seed. | 2 |
 | `src/ingest` | Camera, image and PDF input. `ingest.ts` is the pure pipeline (unit-tested with fakes); `native.ts` wires in the pickers, camera, ML Kit and the local module. Text stays in memory; cache files are deleted. | 0, 4 |
-| `src/utils` | Pure logic: row parser, alias normalizer, OCR row rebuild, text-layer checks. Unit-tested. | 0, 2 |
+| `src/utils` | Pure logic: row parser, alias normalizer, dashboard panels, OCR row rebuild, text-layer checks. Unit-tested. | 0, 2, 7 |
 | `src/ai` | Extraction: parser first, then the user-imported GGUF model via llama.rn for unread lines, with schema-constrained JSON and a check that every number is printed on its line. See `src/ai/README.md`. | 5 |
-| `src/chat` | Deterministic intent and entity matching for the data-only chat. | 7 |
+| `src/chat` | Data-only chat: rule-based intents, alias and fuzzy marker matching, template answers. See `src/chat/README.md`. | 7 |
 | `src/spike` | Phase 0 spike screen. Dev builds only; removed once Phase 4 and 5 replace it. | 0 |
 | `modules/pdf-page-renderer` | Local Expo module with two native modules: `PdfPageRenderer` (Android `PdfRenderer`) and `IngestFiles` (photo prep, SHA-256, FLAG_SECURE). | 0, 4 |
 | `plugins` | Expo config plugins. | 1 |

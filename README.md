@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Phase 6 (verification: check, correct and save extracted values). See PLAN.md and docs/ARCHITECTURE.md.
+Phase 7 (dashboard, trend charts and data-only chat). See PLAN.md and docs/ARCHITECTURE.md.

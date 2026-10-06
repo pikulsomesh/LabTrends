@@ -1,7 +1,13 @@
 // Screen stack for the app. A plain reducer instead of a navigation library keeps Phase 3 free of
 // new native modules. Pure, so it is unit-tested without a phone.
 
-export type Route = { name: 'profiles' } | { name: 'profileHome' } | { name: 'ingest' } | { name: 'spike' };
+export type Route =
+  | { name: 'profiles' }
+  | { name: 'profileHome' }
+  | { name: 'ingest' }
+  | { name: 'marker'; key: string }
+  | { name: 'chat' }
+  | { name: 'spike' };
 
 export interface NavState {
   stack: Route[];
@@ -10,9 +16,13 @@ export interface NavState {
 export type NavAction =
   | { type: 'openProfile' }
   | { type: 'openIngest' }
+  | { type: 'openMarker'; key: string }
+  | { type: 'openChat' }
   | { type: 'openSpike' }
   | { type: 'closeProfile' }
   | { type: 'back' };
+
+const HOME: Route[] = [{ name: 'profiles' }, { name: 'profileHome' }];
 
 export const initialNav = (activeProfileId: number | null): NavState => ({
   stack: activeProfileId == null ? [{ name: 'profiles' }] : [{ name: 'profiles' }, { name: 'profileHome' }],
@@ -29,7 +39,11 @@ export function navReducer(s: NavState, a: NavAction): NavState {
       return { stack: [{ name: 'profiles' }, { name: 'profileHome' }] };
     case 'openIngest':
       // Always on top of the profile home, so back returns there and the extracted text is dropped.
-      return { stack: [{ name: 'profiles' }, { name: 'profileHome' }, { name: 'ingest' }] };
+      return { stack: [...HOME, { name: 'ingest' }] };
+    case 'openMarker':
+      return { stack: [...HOME, { name: 'marker', key: a.key }] };
+    case 'openChat':
+      return { stack: [...HOME, { name: 'chat' }] };
     case 'closeProfile':
       return { stack: [{ name: 'profiles' }] };
     case 'openSpike':

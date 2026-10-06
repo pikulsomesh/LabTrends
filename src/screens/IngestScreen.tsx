@@ -2,13 +2,14 @@
 // values (parser first, the imported local model for lines the parser cannot read), then check
 // and save them on the verification form. Text and candidates live in this screen's state only:
 // they are dropped on leaving, and cleared as soon as the report is saved.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useSecureScreen } from '../components/useSecureScreen';
 import VerifyForm from '../components/VerifyForm';
 import { extractReport, type Extraction, type ExtractedRow } from '../ai/extract';
 import { importedModel, importModel, loadSlm, removeModel, type ModelInfo } from '../ai/model';
 import { appendPages, ingest, type Extracted, type IngestInput } from '../ingest/ingest';
-import { deviceDeps, pickImages, pickPdf, setSecure, takePhoto } from '../ingest/native';
+import { deviceDeps, pickImages, pickPdf, takePhoto } from '../ingest/native';
 import { useActiveProfile } from '../state/ActiveProfile';
 import { draftFromExtraction, type Draft } from '../verify/draft';
 
@@ -46,13 +47,7 @@ export default function IngestScreen({ onDone }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Report contents are on screen: block screenshots and the recents thumbnail.
-  useEffect(() => {
-    setSecure(true).catch(() => {});
-    return () => {
-      setSecure(false).catch(() => {});
-    };
-  }, []);
+  useSecureScreen();
 
   async function work(label: string, fn: () => Promise<void>) {
     if (busy) return;
