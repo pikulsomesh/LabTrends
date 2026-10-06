@@ -1,0 +1,33 @@
+name: Bundled model
+
+# Downloads the model that release.yml packs into the APK and checks it against the pinned
+# SHA-256. Quick, so a bad pin or a moved file shows up without waiting for a full APK build.
+on:
+  pull_request:
+    paths:
+      - eval/slm/bundled-model.env
+      - scripts/fetch-slm.sh
+      - .github/workflows/bundled-model.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and verify
+        run: ./scripts/fetch-slm.sh "$RUNNER_TEMP/model.gguf"
+      - name: Report
+        run: |
+          {
+            echo "### Bundled model"
+            echo '```'
+            source eval/slm/bundled-model.env
+            echo "$SLM_REPO/$SLM_FILE@$SLM_REVISION"
+            sha256sum "$RUNNER_TEMP/model.gguf"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
