@@ -70,7 +70,7 @@ function optNum(v: number | null, field: string): number | null {
   return v;
 }
 
-function cleanReport(r: NewReport): NewReport {
+export function cleanReport(r: NewReport): NewReport {
   const date = r.date.trim();
   const d = new Date(`${date}T00:00:00Z`);
   if (!ISO_DATE.test(date) || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) {
@@ -86,7 +86,7 @@ function cleanReport(r: NewReport): NewReport {
   };
 }
 
-function cleanBiomarker(b: NewBiomarker, i: number): NewBiomarker {
+export function cleanBiomarker(b: NewBiomarker, i: number): NewBiomarker {
   const at = `Row ${i + 1}`;
   const name = optText(b.name, 120, `${at} name`);
   if (!name) throw new Error(`${at}: name must not be empty.`);

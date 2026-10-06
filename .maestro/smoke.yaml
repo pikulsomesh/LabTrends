@@ -1,0 +1,96 @@
+# End-to-end smoke test of the release APK on an Android emulator (run by .github/workflows/release.yml).
+# Covers: create a profile, import a scanned PDF (render + OCR + parser), check and save it, see it
+# on the dashboard and its trend screen, ask the data-only chat, and get the fixed out-of-scope reply.
+# Android buttons show their titles in capitals, so text matches are case-insensitive.
+appId: dev.someshmohapatra.labtrends
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "LabTrends"
+    timeout: 60000
+- assertVisible: "(?i).*not diagnose.*"
+- takeScreenshot: 01-landing
+
+# Profile
+- tapOn: "(?i)add profile"
+- tapOn: "Name, e.g. Asha"
+- inputText: "Asha"
+- tapOn: "(?i)create"
+- extendedWaitUntil:
+    visible: "(?i)no values yet.*"
+    timeout: 20000
+- takeScreenshot: 02-empty-dashboard
+
+# Import the scanned fixture through the system file picker
+- tapOn: "(?i)add a report"
+- tapOn: "(?i)choose a pdf"
+- runFlow:
+    when:
+      notVisible: "sample_report_1_scanned.pdf"
+    commands:
+      - tapOn:
+          text: "Show roots"
+          optional: true
+      - tapOn:
+          text: "Downloads"
+          optional: true
+- tapOn: "sample_report_1_scanned.pdf"
+- extendedWaitUntil:
+    visible: "(?i).*values? found.*"
+    timeout: 240000
+- takeScreenshot: 03-extracted
+
+# Check and save
+- tapOn: "(?i)review and save"
+- assertVisible: "(?i)check and save"
+- scrollUntilVisible:
+    element: "(?i)save report"
+    direction: DOWN
+    timeout: 60000
+- tapOn: "(?i)save report"
+# OCR can miss the collection date; type it if the form asks.
+- runFlow:
+    when:
+      visible: "(?i)enter the collection date.*"
+    commands:
+      - scrollUntilVisible:
+          element: "(?i)collection date.*"
+          direction: UP
+      - tapOn:
+          below: "(?i)collection date.*"
+      - eraseText
+      - inputText: "2026-03-12"
+      - hideKeyboard
+      - scrollUntilVisible:
+          element: "(?i)save report"
+          direction: DOWN
+          timeout: 60000
+      - tapOn: "(?i)save report"
+- extendedWaitUntil:
+    visible: "(?i)export pdf summary"
+    timeout: 20000
+- assertVisible: "ALT"
+- takeScreenshot: 04-dashboard
+
+# Trend screen
+- tapOn: "ALT"
+- assertVisible: "(?i)recorded values"
+- assertVisible: "(?i).*printed range.*"
+- back
+
+# Data-only chat
+- tapOn: "(?i)ask"
+- tapOn: "e.g. ALT trend"
+- inputText: "latest ALT"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Your latest ALT is .*"
+    timeout: 20000
+- tapOn: "e.g. ALT trend"
+- inputText: "is my ALT high?"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "I can only show your recorded data.*"
+    timeout: 20000
+- takeScreenshot: 05-chat

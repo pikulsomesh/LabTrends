@@ -53,4 +53,10 @@ describe('navigation', () => {
     expect(names(c)).toEqual(['profiles', 'profileHome', 'chat']);
     expect(names(navReducer(c, { type: 'back' }))).toEqual(['profiles', 'profileHome']);
   });
+
+  it('opens backup from the landing screen', () => {
+    const s = navReducer(initialNav(3), { type: 'openBackup' });
+    expect(names(s)).toEqual(['profiles', 'backup']);
+    expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles']);
+  });
 });

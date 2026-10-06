@@ -5,7 +5,8 @@
 | Path | What lives there | Phase |
 |---|---|---|
 | `App.tsx` | Root component. Sweeps leftover import files from the cache, opens the database, then shows the screen stack (landing, profile home, add report; dev builds can open the Phase 0 spike). | 1, 3, 4 |
-| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen` (dashboard), `IngestScreen` (add, check and save a report), `MarkerScreen` (trend chart and values), `ChatScreen`. | 3+ |
+| `src/screens` | One file per screen: `ProfilesScreen` (landing), `ProfileHomeScreen` (dashboard, PDF export), `IngestScreen` (add, check and save a report), `MarkerScreen` (trend chart and values), `ChatScreen`, `BackupScreen`. | 3+ |
+| `src/backup` | PDF summary (expo-print, shared with expo-sharing) and the encrypted backup: AES-256-GCM (@noble/ciphers) with an Argon2id key (@noble/hashes, 19 MiB, 2 passes), header authenticated, restore validated and run in one transaction. | 8 |
 | `src/dashboard` | Pure chart helpers: unit grouping (units are never converted), y-axis scale, date labels. | 7 |
 | `src/state` | Active profile (`ActiveProfileProvider`, remembered in the `app_state` table) and the screen-stack reducer. No navigation library, so no extra native modules. | 3 |
 | `src/components` | Shared UI pieces (`Disclaimer`, `ProfileNameModal`, `VerifyForm`, `TrendChart`, `useSecureScreen`). | 3+ |
@@ -44,6 +45,10 @@ What happens to the files:
   `cache/ingest-image`, in case an import was interrupted.
 - The text is kept in the import screen's state only. Leaving the screen or tapping Discard drops it.
   The screen sets FLAG_SECURE while open, so no screenshots and a blank recents thumbnail.
+
+Exports: the PDF summary and the backup file are written to `cache/Print` and `cache/export`,
+handed to the Android share sheet, and deleted when it closes. The startup sweep empties those
+folders too. The app itself makes no network call; where the user sends the file is their choice.
 
 Permissions: CAMERA is the only one added. `RECORD_AUDIO` and the legacy storage permissions are
 blocked in `app.json`.

@@ -31,4 +31,4 @@ Model files are not committed to this repo (GitHub rejects files over 100 MB). T
 
 ## Status
 
-Phase 7 (dashboard, trend charts and data-only chat). See PLAN.md and docs/ARCHITECTURE.md.
+Phases 1 to 8 built. Still open from PLAN.md: the Phase 0 on-device measurements and the "Later: model packaging" item (publishing GGUF files with checksums). See PLAN.md and docs/ARCHITECTURE.md.

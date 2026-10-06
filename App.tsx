@@ -3,6 +3,7 @@ import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-na
 import { StatusBar } from 'expo-status-bar';
 import { openDatabase, type Db } from './src/db';
 import { sweepIngestCache } from './src/ingest/native';
+import BackupScreen from './src/screens/BackupScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import IngestScreen from './src/screens/IngestScreen';
 import MarkerScreen from './src/screens/MarkerScreen';
@@ -66,6 +67,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   if (route.name === 'ingest' && active) return <IngestScreen onDone={goBack} />;
   if (route.name === 'marker' && active) return <MarkerScreen markerKey={route.key} onEmpty={goBack} />;
   if (route.name === 'chat' && active) return <ChatScreen />;
+  if (route.name === 'backup') return <BackupScreen />;
   if (route.name === 'profileHome' && active) {
     return (
       <ProfileHomeScreen
@@ -79,6 +81,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   return (
     <ProfilesScreen
       onOpenProfile={() => dispatch({ type: 'openProfile' })}
+      onOpenBackup={() => dispatch({ type: 'openBackup' })}
       onOpenSpike={__DEV__ ? () => dispatch({ type: 'openSpike' }) : undefined}
     />
   );

@@ -12,6 +12,8 @@ interface ActiveProfileValue {
   create(name: string): Promise<void>;
   rename(id: number, name: string): Promise<void>;
   remove(id: number): Promise<void>;
+  /** Re-reads profiles from the database, after a restore. */
+  reload(): Promise<void>;
 }
 
 const Ctx = createContext<ActiveProfileValue | null>(null);
@@ -38,6 +40,7 @@ export function ActiveProfileProvider({ db, initial, children }: Props) {
       create: apply(session.addProfile),
       rename: apply(session.editProfileName),
       remove: apply(session.removeProfile),
+      reload: apply(session.loadSession),
     }),
     [db, state, apply],
   );

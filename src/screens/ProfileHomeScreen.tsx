@@ -3,6 +3,7 @@
 // listed as recorded, never flagged against their range (CLAUDE.md guardrail 4).
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { sharePdfSummary } from '../backup/device';
 import Disclaimer from '../components/Disclaimer';
 import ProfileNameModal from '../components/ProfileNameModal';
 import { useSecureScreen } from '../components/useSecureScreen';
@@ -28,6 +29,19 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
   const [rows, setRows] = useState<Row[] | null>(null);
   const [tab, setTab] = useState(ALL);
   const [renaming, setRenaming] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportPdf() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await sharePdfSummary(db, profile.id, profile.name);
+    } catch (e) {
+      Alert.alert('Could not make the PDF', e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     let live = true;
@@ -129,6 +143,7 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
             <Button title="Rename" onPress={() => setRenaming(true)} />
           </View>
         </View>
+        {rows && rows.length > 0 && <Button title={exporting ? 'Making PDF…' : 'Export PDF summary'} disabled={exporting} onPress={exportPdf} />}
         <Button title="Delete profile" color="#b00020" onPress={confirmDelete} />
         <Disclaimer />
       </View>
