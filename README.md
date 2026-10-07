@@ -3,7 +3,7 @@
 An offline, privacy-first Android app that turns scattered lab reports (PDFs and paper scans) into per-person health trends. Built for families, with multiple profiles. No cloud, no accounts, no network permission.
 
 **Author:** Somesh Mohapatra
-**License:** MIT
+**License:** [PolyForm Noncommercial 1.0.0](LICENSE). Free for personal, research, and other noncommercial use; commercial use needs a separate license from the author. Third-party components keep their own licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Releases up to and including v1.0.0 were published under the MIT License, and copies obtained under it keep those terms.
 
 ## What it does
 
