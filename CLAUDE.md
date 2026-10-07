@@ -1,6 +1,6 @@
 # CLAUDE.md: project rules for Claude Code
 
-Project: offline Android app for multi-profile lab-report trends. Author: Somesh Mohapatra. License: MIT.
+Project: offline Android app for multi-profile lab-report trends. Author: Somesh Mohapatra. License: PolyForm Noncommercial 1.0.0 (see LICENSE; dependencies and the bundled model keep their own licenses, listed in THIRD_PARTY_NOTICES.md).
 
 ## Stack
 
