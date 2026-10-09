@@ -2,18 +2,30 @@
 // printed in different units by different labs. Units are never converted (that would be
 // interpretation), so the chart plots the unit with the most values and lists the rest.
 import type { SeriesPoint } from '../db/biomarkers';
+import { shortDateIn, type DateOrder } from '../utils/dates';
 
 const unitKey = (u: string | null) => (u ?? '').trim().toLowerCase().replace(/\s+/g, '');
 
+/** A recorded value with a number. Results printed as words are listed, not plotted. */
+export type NumericPoint = SeriesPoint & { value: number };
+
+export const numericPoints = (points: SeriesPoint[]): NumericPoint[] =>
+  points.filter((p): p is NumericPoint => p.value != null && p.valueText == null);
+
+/** Results printed as words ("Trace", "Pale yellow"), oldest first. */
+export const textPoints = (points: SeriesPoint[]): SeriesPoint[] => points.filter((p) => p.valueText != null);
+
 export interface UnitGroups {
   /** Points in the most common unit, oldest first. Ties go to the unit of the latest value. */
-  main: SeriesPoint[];
+  main: NumericPoint[];
   unit: string | null;
   /** Points in any other unit, oldest first. */
-  other: SeriesPoint[];
+  other: NumericPoint[];
 }
 
-export function groupByUnit(points: SeriesPoint[]): UnitGroups {
+/** Groups the numeric points by unit. Text results are left out. */
+export function groupByUnit(all: SeriesPoint[]): UnitGroups {
+  const points = numericPoints(all);
   if (!points.length) return { main: [], unit: null, other: [] };
   const counts = new Map<string, number>();
   for (const p of points) counts.set(unitKey(p.unit), (counts.get(unitKey(p.unit)) ?? 0) + 1);
@@ -66,9 +78,5 @@ export function chartScale(values: number[], target = 4): Scale {
   return { min, max: round(min + sections * step), step, sections };
 }
 
-/** Short date for x labels: "12 Mar 26". */
-export function shortDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${Number(d)} ${months[Number(m) - 1] ?? m} ${y.slice(2)}`;
-}
+/** Short date for x labels: "12 Mar 26", or "Mar 12 26" month first. */
+export const shortDate = (iso: string, order: DateOrder = 'dmy'): string => shortDateIn(iso, order);

@@ -4,12 +4,13 @@
 import { loadCanonicalizer } from '../db/aliases';
 import { findReportsByHash, saveVerifiedReport } from '../db/reports';
 import type { Db, Report } from '../db/types';
+import type { DateOrder } from '../utils/dates';
 import { validateDraft, type Draft, type DraftErrors } from './draft';
 
 export type SaveResult = { ok: true; reportId: number } | { ok: false; errors: DraftErrors };
 
-export async function saveDraft(db: Db, profileId: number, draft: Draft, now = new Date()): Promise<SaveResult> {
-  const v = validateDraft(draft, await loadCanonicalizer(db), now);
+export async function saveDraft(db: Db, profileId: number, draft: Draft, now = new Date(), order: DateOrder = 'ymd'): Promise<SaveResult> {
+  const v = validateDraft(draft, await loadCanonicalizer(db), now, order);
   if (!v.ok) return v;
   return { ok: true, reportId: await saveVerifiedReport(db, profileId, v.report, v.biomarkers) };
 }

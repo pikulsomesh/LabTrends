@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseReport } from '../utils/parser';
 import { listCanonicalNames, loadCanonicalizer, setUserAlias, seedAliases } from './aliases';
-import { getLatest, getSeries, listMarkers } from './biomarkers';
+import { formatValue, getLatest, getSeries, listMarkers } from './biomarkers';
+import { getDatePref, setDatePref } from './appState';
 import { createProfile, deleteProfile, getProfile, listProfiles, renameProfile } from './profiles';
 import { deleteReport, findReportsByHash, getReport, listReports, saveVerifiedReport } from './reports';
 import { MIGRATIONS, migrate, prepareDatabase, SCHEMA_VERSION, userVersion } from './schema';
@@ -21,6 +22,7 @@ function verified(file: string, hash: string | null = null): [NewReport, NewBiom
       name: r.name,
       canonicalName: r.canonicalName,
       value: r.value,
+      valueText: r.valueText,
       unit: r.unit,
       refLow: r.refLow,
       refHigh: r.refHigh,
@@ -226,5 +228,61 @@ describe('alias table', () => {
     expect(canonicalize('liver enzyme-x')).toBe('ALT');
     expect(canonicalize('Hb')).toBe('Custom Hb');
     expect(canonicalize('Hemoglobin')).toBe('Hemoglobin');
+  });
+});
+
+describe('text results (migration 3)', () => {
+  it('keeps values saved before the migration and makes value optional', async () => {
+    const old = openTestDb();
+    await old.execAsync('PRAGMA foreign_keys = ON');
+    for (const m of MIGRATIONS.slice(0, 2)) await old.execAsync(m);
+    await old.execAsync('PRAGMA user_version = 2');
+    await old.runAsync("INSERT INTO profiles (name) VALUES ('Asha')", []);
+    await old.runAsync("INSERT INTO reports (profile_id, date) VALUES (1, '2026-03-12')", []);
+    await old.runAsync("INSERT INTO biomarkers (report_id, name, canonical_name, value, unit) VALUES (1, 'SGPT', 'ALT', 52, 'U/L')", []);
+    await prepareDatabase(old);
+    expect(await userVersion(old)).toBe(SCHEMA_VERSION);
+    expect(await getSeries(old, 1, 'ALT')).toEqual([expect.objectContaining({ value: 52, valueText: null, unit: 'U/L' })]);
+    expect(await getDatePref(old)).toBe('auto');
+    // Foreign keys and the cascade survive the table rebuild.
+    await old.runAsync('DELETE FROM profiles WHERE id = 1', []);
+    expect((await old.getFirstAsync<{ n: number }>('SELECT count(*) AS n FROM biomarkers', []))!.n).toBe(0);
+    old.close();
+  });
+
+  it('saves a urine report with words and numbers and reads it back per marker', async () => {
+    const p = await createProfile(db, 'Asha');
+    const [report, rows] = verified('sample_report_3_urine.txt');
+    await saveVerifiedReport(db, p.id, report, rows);
+    expect(await getSeries(db, p.id, 'Urine Protein')).toEqual([
+      expect.objectContaining({ value: null, valueText: 'Trace', rawRefText: 'Nil', name: 'Protein' }),
+    ]);
+    expect(formatValue((await getLatest(db, p.id, 'Urine Pus Cells'))!)).toBe('2-4 /hpf');
+    expect((await getLatest(db, p.id, 'Urine Specific Gravity'))!.value).toBe(1.015);
+    // Urine RBC and the blood count's RBC stay two markers.
+    const keys = (await listMarkers(db, p.id)).map((m) => m.key);
+    expect(keys).toEqual(expect.arrayContaining(['RBC', 'Urine RBC', 'Urine Colour']));
+  });
+
+  it('refuses a value with both a number and words, or neither', async () => {
+    const p = await createProfile(db, 'Asha');
+    const r = { date: '2026-03-12', category: null, labName: null, sourceFileHash: null };
+    const b = { name: 'Protein', canonicalName: null, unit: null, refLow: null, refHigh: null, rawRefText: null };
+    await expect(saveVerifiedReport(db, p.id, r, [{ ...b, value: 1, valueText: 'Trace' }])).rejects.toThrow(/not both/);
+    await expect(saveVerifiedReport(db, p.id, r, [{ ...b, value: null, valueText: '  ' }])).rejects.toThrow(/finite number/);
+    await expect(saveVerifiedReport(db, p.id, r, [{ ...b, value: null, valueText: 'x'.repeat(61) }])).rejects.toThrow(/60 characters/);
+    await expect(
+      db.runAsync("INSERT INTO reports (profile_id, date) VALUES (?, '2026-03-12')", [p.id]).then(({ lastInsertRowId }) =>
+        db.runAsync("INSERT INTO biomarkers (report_id, name, value, value_text) VALUES (?, 'X', 1, 'Trace')", [lastInsertRowId])),
+    ).rejects.toThrow(/CHECK/);
+  });
+});
+
+describe('date setting', () => {
+  it('defaults to automatic and remembers a choice', async () => {
+    expect(await getDatePref(db)).toBe('auto');
+    await setDatePref(db, 'mdy');
+    expect(await getDatePref(db)).toBe('mdy');
+    await expect(setDatePref(db, 'xyz' as never)).rejects.toThrow(/Unknown/);
   });
 });

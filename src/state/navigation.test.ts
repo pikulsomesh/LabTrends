@@ -16,6 +16,12 @@ describe('navigation', () => {
     expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles']);
   });
 
+  it('opens settings from the landing screen, and back returns there', () => {
+    const s = navReducer(initialNav(3), { type: 'openSettings' });
+    expect(names(s)).toEqual(['profiles', 'settings']);
+    expect(names(navReducer(s, { type: 'back' }))).toEqual(['profiles']);
+  });
+
   it('back on the landing screen leaves the state alone so Android can exit', () => {
     const s = initialNav(null);
     expect(navReducer(s, { type: 'back' })).toBe(s);

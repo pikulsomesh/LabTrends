@@ -11,6 +11,7 @@ import { color, radius, space, type as t } from '../ui/theme';
 interface Props {
   onOpenProfile(): void;
   onOpenBackup(): void;
+  onOpenSettings(): void;
   /** Dev builds only: opens the Phase 0 spike screen. */
   onOpenSpike?: () => void;
 }
@@ -24,7 +25,7 @@ const AVATARS = [
   { bg: '#FFE0EA', ink: '#8A3550' },
 ];
 
-export default function ProfilesScreen({ onOpenProfile, onOpenBackup, onOpenSpike }: Props) {
+export default function ProfilesScreen({ onOpenProfile, onOpenBackup, onOpenSettings, onOpenSpike }: Props) {
   const { profiles, select, create } = useProfiles();
   const [creating, setCreating] = useState(false);
 
@@ -61,6 +62,7 @@ export default function ProfilesScreen({ onOpenProfile, onOpenBackup, onOpenSpik
       <View style={styles.buttons}>
         <Button title="Add profile" onPress={() => setCreating(true)} />
         <Button title="Backup and restore" variant="soft" onPress={onOpenBackup} />
+        <Button title="Settings" variant="ghost" onPress={onOpenSettings} />
         {onOpenSpike && <Button title="Open Phase 0 spike" variant="ghost" onPress={onOpenSpike} />}
       </View>
       <Small>Everything stays on this phone. There is no account and no network access.</Small>

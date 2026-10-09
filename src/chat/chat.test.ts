@@ -13,7 +13,7 @@ import { HELP_REPLY, OUT_OF_SCOPE_REPLY } from './answer';
 import { ask, loadMarkerIndex } from './chat';
 import { editDistance, findMarkers, parseQuestion, type MarkerIndex } from './intent';
 
-const fixture = (n: number) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
+const fixture = (n: number | string) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
 
 describe('panels', () => {
   it('puts every canonical marker in exactly one panel', () => {
@@ -25,7 +25,7 @@ describe('panels', () => {
 });
 
 const pt = (date: string, value: number, unit: string | null, refLow: number | null = null, refHigh: number | null = null): SeriesPoint => ({
-  reportId: 1, date, labName: null, name: 'x', value, unit, refLow, refHigh, rawRefText: null,
+  reportId: 1, date, labName: null, name: 'x', value, valueText: null, unit, refLow, refHigh, rawRefText: null,
 });
 
 describe('chart data', () => {
@@ -169,6 +169,23 @@ describe('ask', () => {
     const [a] = await reply('list my tests');
     expect(a.text).toMatch(/^Saved tests/);
     expect(a.text).toMatch(/Liver: .*ALT \(2\)/);
+  });
+
+  it('answers results printed as words without a chart, and dates in the user order', async () => {
+    const urine = async (date: string, protein: string) =>
+      saveVerifiedReport(db, profileId, { date, category: null, labName: null, sourceFileHash: null }, [
+        { name: 'Protein', canonicalName: 'Urine Protein', value: null, valueText: protein, unit: null, refLow: null, refHigh: null, rawRefText: 'Nil' },
+      ]);
+    await urine('2026-01-07', 'Nil');
+    await urine('2026-07-01', 'Trace');
+    index = await loadMarkerIndex(db, profileId);
+    const [latest] = await reply('latest urine protein');
+    expect(latest.text).toBe('Your latest Urine Protein is Trace on 2026-07-01. Printed range: Nil.');
+    const [trend] = (await ask(db, profileId, index, 'urine protein trend', (iso) => `<${iso}>`));
+    expect(trend.text).toBe('2 Urine Protein values from <2026-01-07> to <2026-07-01>. Latest: Trace on <2026-07-01>. Printed range: Nil. Recorded as text: Trace (<2026-07-01>), Nil (<2026-01-07>).');
+    expect(trend.chart).toBeUndefined();
+    const [cmp] = await reply('compare urine protein');
+    expect(cmp.text).toBe('Urine Protein was Nil on 2026-01-07 and Trace on 2026-07-01.');
   });
 
   it('says when a known test has no values', async () => {

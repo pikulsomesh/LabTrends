@@ -21,7 +21,8 @@ interface BiomarkerRow {
   report_id: number;
   name: string;
   canonical_name: string | null;
-  value: number;
+  value: number | null;
+  value_text: string | null;
   unit: string | null;
   ref_low: number | null;
   ref_high: number | null;
@@ -48,6 +49,7 @@ const toBiomarker = (r: BiomarkerRow): Biomarker => ({
   name: r.name,
   canonicalName: r.canonical_name,
   value: r.value,
+  valueText: r.value_text,
   unit: r.unit,
   refLow: r.ref_low,
   refHigh: r.ref_high,
@@ -90,11 +92,14 @@ export function cleanBiomarker(b: NewBiomarker, i: number): NewBiomarker {
   const at = `Row ${i + 1}`;
   const name = optText(b.name, 120, `${at} name`);
   if (!name) throw new Error(`${at}: name must not be empty.`);
-  if (!Number.isFinite(b.value)) throw new Error(`${at} (${name}): value must be a finite number.`);
+  const valueText = optText(b.valueText ?? null, 60, `${at} (${name}) text result`);
+  if (valueText !== null && b.value !== null) throw new Error(`${at} (${name}): give a number or a text result, not both.`);
+  if (valueText === null && !Number.isFinite(b.value)) throw new Error(`${at} (${name}): value must be a finite number.`);
   return {
     name,
     canonicalName: optText(b.canonicalName, 120, `${at} canonical name`),
-    value: b.value,
+    value: valueText === null ? b.value : null,
+    valueText,
     unit: optText(b.unit, 40, `${at} unit`),
     refLow: optNum(b.refLow, `${at} reference low`),
     refHigh: optNum(b.refHigh, `${at} reference high`),
@@ -120,9 +125,9 @@ export async function saveVerifiedReport(
     );
     for (const b of rows) {
       await db.runAsync(
-        `INSERT INTO biomarkers (report_id, name, canonical_name, value, unit, ref_low, ref_high, raw_ref_text)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [reportId, b.name, b.canonicalName, b.value, b.unit, b.refLow, b.refHigh, b.rawRefText],
+        `INSERT INTO biomarkers (report_id, name, canonical_name, value, value_text, unit, ref_low, ref_high, raw_ref_text)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [reportId, b.name, b.canonicalName, b.value, b.valueText ?? null, b.unit, b.refLow, b.refHigh, b.rawRefText],
       );
     }
     return reportId;

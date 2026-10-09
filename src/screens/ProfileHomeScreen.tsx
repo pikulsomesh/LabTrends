@@ -8,6 +8,7 @@ import Disclaimer from '../components/Disclaimer';
 import ProfileNameModal from '../components/ProfileNameModal';
 import { useSecureScreen } from '../components/useSecureScreen';
 import { getLatest, listMarkers, type MarkerSummary, type SeriesPoint } from '../db';
+import { formatDate } from '../utils/dates';
 import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
 import { panelOf, PANEL_ORDER } from '../utils/panels';
 import { Body, Button, Card, Chip, Screen, Small, Title } from '../ui';
@@ -33,7 +34,7 @@ function abbreviate(key: string) {
 
 export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpenMarker, onOpenChat }: Props) {
   useSecureScreen();
-  const { db, rename, remove } = useProfiles();
+  const { db, rename, remove, dateOrder } = useProfiles();
   const profile = useActiveProfile();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [tab, setTab] = useState(ALL);
@@ -44,7 +45,7 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
     if (exporting) return;
     setExporting(true);
     try {
-      await sharePdfSummary(db, profile.id, profile.name);
+      await sharePdfSummary(db, profile.id, profile.name, dateOrder);
     } catch (e) {
       Alert.alert('Could not make the PDF', e instanceof Error ? e.message : String(e));
     } finally {
@@ -139,12 +140,12 @@ export default function ProfileHomeScreen({ onSwitchProfile, onAddReport, onOpen
                 <View style={styles.rowMain}>
                   <Text style={styles.marker}>{item.key}</Text>
                   <Small>
-                    {item.count} value{item.count === 1 ? '' : 's'}, latest {item.latestDate}
+                    {item.count} value{item.count === 1 ? '' : 's'}, latest {formatDate(item.latestDate, dateOrder)}
                   </Small>
                 </View>
                 {item.latest && (
-                  <Text style={styles.value}>
-                    {item.latest.value} <Text style={styles.unit}>{item.latest.unit ?? ''}</Text>
+                  <Text style={[styles.value, item.latest.valueText != null && styles.textValue]} numberOfLines={1}>
+                    {item.latest.valueText ?? item.latest.value} <Text style={styles.unit}>{item.latest.unit ?? ''}</Text>
                   </Text>
                 )}
               </Card>
@@ -188,6 +189,7 @@ const styles = StyleSheet.create({
   rowMain: { flex: 1, gap: 2 },
   marker: { fontSize: 17, fontWeight: '600', color: color.ink },
   value: { fontSize: 18, fontWeight: '700', color: color.ink, fontVariant: ['tabular-nums'] },
+  textValue: { fontSize: 15, maxWidth: 140 },
   unit: { fontSize: 12, fontWeight: '500', color: color.inkSoft },
   footer: { gap: space.md, marginTop: space.lg },
 });

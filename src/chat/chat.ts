@@ -4,7 +4,7 @@ import { loadCanonicalizer } from '../db/aliases';
 import { listMarkers } from '../db/biomarkers';
 import type { Db } from '../db/types';
 import { normalizeName } from '../utils/aliases';
-import { answer, type Answer } from './answer';
+import { answer, type Answer, type DateShower } from './answer';
 import { parseQuestion, type MarkerIndex } from './intent';
 
 export async function loadMarkerIndex(db: Db, profileId: number): Promise<MarkerIndex> {
@@ -21,6 +21,6 @@ export async function loadMarkerIndex(db: Db, profileId: number): Promise<Marker
   };
 }
 
-export async function ask(db: Db, profileId: number, index: MarkerIndex, text: string): Promise<Answer[]> {
-  return answer(db, profileId, parseQuestion(text, index));
+export async function ask(db: Db, profileId: number, index: MarkerIndex, text: string, showDate?: DateShower): Promise<Answer[]> {
+  return answer(db, profileId, parseQuestion(text, index), showDate);
 }

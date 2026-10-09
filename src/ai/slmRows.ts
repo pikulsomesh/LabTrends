@@ -202,9 +202,11 @@ export function acceptSlmRows(output: unknown, lines: string[]): ParsedRow[] {
     used.add(line);
     accepted.push({
       category: null,
+      specimen: null,
       name: name.trim(),
       canonicalName: canonicalize(name),
       value,
+      valueText: null,
       unit: unitText,
       refLow,
       refHigh,

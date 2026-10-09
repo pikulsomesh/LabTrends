@@ -15,6 +15,13 @@ export const PANELS: Record<string, string[]> = {
   Thyroid: ['TSH', 'Total T3', 'Total T4', 'Free T3', 'Free T4'],
   Kidney: ['Creatinine', 'Urea', 'BUN', 'Uric Acid', 'eGFR', 'BUN/Creatinine Ratio', 'Sodium', 'Potassium', 'Chloride', 'Calcium', 'Phosphorus', 'Magnesium'],
   'Vitamins and iron': ['Vitamin D', 'Vitamin B12', 'Folate', 'Iron', 'TIBC', 'Transferrin Saturation', 'Ferritin'],
+  Urine: [
+    'Urine Colour', 'Urine Appearance', 'Urine Specific Gravity', 'Urine pH', 'Urine Volume',
+    'Urine Protein', 'Urine Glucose', 'Urine Ketones', 'Urine Bilirubin', 'Urine Bile Salts', 'Urine Urobilinogen',
+    'Urine Blood', 'Urine Nitrite', 'Urine Leukocyte Esterase',
+    'Urine Pus Cells', 'Urine RBC', 'Urine Epithelial Cells', 'Urine Casts', 'Urine Crystals', 'Urine Bacteria',
+    'Urine Yeast', 'Urine Mucus',
+  ],
   Other: ['CRP', 'hs-CRP', 'PSA'],
 };
 
@@ -23,4 +30,4 @@ export const PANEL_ORDER = Object.keys(PANELS);
 const byMarker = new Map(Object.entries(PANELS).flatMap(([panel, names]) => names.map((n) => [n, panel] as const)));
 
 /** The panel for a marker key (its canonical name, or its printed name when none matched). */
-export const panelOf = (key: string) => byMarker.get(key) ?? 'Other';
+export const panelOf = (key: string) => byMarker.get(key) ?? (/^Urine /.test(key) ? 'Urine' : 'Other');

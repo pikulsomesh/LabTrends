@@ -13,7 +13,9 @@ export interface SeriesPoint {
   date: string;
   labName: string | null;
   name: string;
-  value: number;
+  /** Null for a result printed as words; see valueText. */
+  value: number | null;
+  valueText: string | null;
   unit: string | null;
   refLow: number | null;
   refHigh: number | null;
@@ -25,7 +27,8 @@ interface SeriesRow {
   date: string;
   lab_name: string | null;
   name: string;
-  value: number;
+  value: number | null;
+  value_text: string | null;
   unit: string | null;
   ref_low: number | null;
   ref_high: number | null;
@@ -34,7 +37,7 @@ interface SeriesRow {
 
 const KEY = 'COALESCE(b.canonical_name, b.name)';
 
-const SERIES_SQL = `SELECT b.report_id, r.date, r.lab_name, b.name, b.value, b.unit, b.ref_low, b.ref_high, b.raw_ref_text
+const SERIES_SQL = `SELECT b.report_id, r.date, r.lab_name, b.name, b.value, b.value_text, b.unit, b.ref_low, b.ref_high, b.raw_ref_text
   FROM biomarkers b JOIN reports r ON r.id = b.report_id
   WHERE r.profile_id = ? AND ${KEY} = ?`;
 
@@ -44,6 +47,7 @@ const toPoint = (r: SeriesRow): SeriesPoint => ({
   labName: r.lab_name,
   name: r.name,
   value: r.value,
+  valueText: r.value_text,
   unit: r.unit,
   refLow: r.ref_low,
   refHigh: r.ref_high,
@@ -75,3 +79,7 @@ export async function getLatest(db: Db, profileId: number, key: string): Promise
   );
   return row ? toPoint(row) : null;
 }
+
+/** A recorded value as text: the number, or the words printed for it, with the unit. */
+export const formatValue = (p: Pick<SeriesPoint, 'value' | 'valueText' | 'unit'>) =>
+  `${p.valueText ?? p.value ?? ''}${p.unit ? ` ${p.unit}` : ''}`;

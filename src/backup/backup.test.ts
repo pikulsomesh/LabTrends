@@ -14,7 +14,7 @@ import { escapeHtml, loadSummary, summaryHtml } from './summaryHtml';
 const rnd = (n: number) => new Uint8Array(randomBytes(n));
 const FAST = { m: 8192, t: 1, p: 1 };
 const PASS = 'correct horse battery';
-const fixture = (n: number) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
+const fixture = (n: number | string) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
 const bytes = (s: string) => new TextEncoder().encode(s);
 
 describe('backup encryption', () => {
@@ -109,6 +109,27 @@ describe('collect and restore', () => {
     fresh.close();
   });
 
+  it('carries results printed as words, and restores backups made before them', async () => {
+    const asha = (await listProfiles(db)).find((p) => p.name === 'Asha')!;
+    const parsed = parseReport(fixture('3_urine'));
+    await saveVerifiedReport(db, asha.id, { date: '2026-07-01', category: null, labName: null, sourceFileHash: null },
+      parsed.rows.map((r) => ({ name: r.name, canonicalName: r.canonicalName, value: r.value, valueText: r.valueText, unit: r.unit, refLow: r.refLow, refHigh: r.refHigh, rawRefText: r.rawRefText })));
+    const data = parseBackup(JSON.parse(JSON.stringify(await collectBackup(db))));
+    const urine = data.profiles[0].reports.find((r) => r.date === '2026-07-01')!;
+    expect(urine.biomarkers.find((b) => b.name === 'Protein')).toMatchObject({ value: null, valueText: 'Trace' });
+
+    const fresh = openTestDb();
+    await prepareDatabase(fresh);
+    expect((await restoreBackup(fresh, data)).values).toBe(19 + 16);
+    fresh.close();
+
+    // A backup from before text results has no valueText at all.
+    const old = JSON.parse(JSON.stringify(await collectBackup(db)));
+    old.schemaVersion = 2;
+    for (const p of old.profiles) for (const r of p.reports) r.biomarkers = r.biomarkers.filter((b: { value: unknown }) => b.value !== null).map(({ valueText: _, ...b }: Record<string, unknown>) => b);
+    expect(parseBackup(old).profiles[0].reports[0].biomarkers[0]).toMatchObject({ valueText: null });
+  });
+
   it('adds restored profiles next to existing ones without merging', async () => {
     const data = parseBackup(JSON.parse(JSON.stringify(await collectBackup(db))));
     await restoreBackup(db, data);
@@ -162,5 +183,19 @@ describe('PDF summary', () => {
     expect(html).toContain('<h3>ALT</h3>');
     expect(html).toContain('Not a medical device.');
     expect(html).not.toMatch(/\b(abnormal|elevated|normal)\b/i);
+  });
+
+  it('lists results printed as words, with dates in the user order', async () => {
+    const db = openTestDb();
+    await prepareDatabase(db);
+    const p = await createProfile(db, 'Asha');
+    const parsed = parseReport(fixture('3_urine'));
+    await saveVerifiedReport(db, p.id, { date: '2026-07-01', category: null, labName: null, sourceFileHash: null },
+      parsed.rows.map((r) => ({ name: r.name, canonicalName: r.canonicalName, value: r.value, valueText: r.valueText, unit: r.unit, refLow: r.refLow, refHigh: r.refHigh, rawRefText: r.rawRefText })));
+    const html = summaryHtml('Asha', await loadSummary(db, p.id), 'Not a medical device.', new Date('2026-10-05T00:00:00Z'), 'mdy');
+    db.close();
+    expect(html).toContain('<h2>Urine</h2>');
+    expect(html).toContain('<h3>Urine Protein</h3>');
+    expect(html).toContain('<td>Jul 1, 2026</td><td class="num">Trace</td>');
   });
 });

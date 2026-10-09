@@ -1,11 +1,14 @@
 // Line chart of one marker over time with the printed reference range of the latest report drawn as
 // a shaded band (react-native-gifted-charts). It plots recorded values only; points are not
-// coloured or marked by where they fall against the range (CLAUDE.md guardrail 4).
+// coloured or marked by where they fall against the range (CLAUDE.md guardrail 4). Results printed
+// as words have no place on a number line; the marker screen lists them instead.
 import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { chartScale, groupByUnit, latestRange, shortDate } from '../dashboard/chartData';
 import type { SeriesPoint } from '../db';
+import { useDateOrder } from '../state/ActiveProfile';
+import { formatDate } from '../utils/dates';
 
 const HEIGHT = 180;
 const Y_LABEL_WIDTH = 44;
@@ -15,6 +18,7 @@ const BOUND = 'rgba(106, 95, 219, 0.55)';
 
 export default function TrendChart({ points }: { points: SeriesPoint[] }) {
   const [width, setWidth] = useState(0);
+  const order = useDateOrder();
   const { main, unit, other } = groupByUnit(points);
   const { low, high } = latestRange(main);
   const scale = chartScale([...main.map((p) => p.value), ...[low, high].filter((v): v is number => v != null)]);
@@ -35,7 +39,7 @@ export default function TrendChart({ points }: { points: SeriesPoint[] }) {
     <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} accessibilityLabel="Trend chart">
       {width > 0 && main.length > 0 && (
         <LineChart
-          data={main.map((p) => ({ value: p.value, label: shortDate(p.date), dataPointText: String(p.value) }))}
+          data={main.map((p) => ({ value: p.value, label: shortDate(p.date, order), dataPointText: String(p.value) }))}
           height={HEIGHT}
           width={plotWidth}
           spacing={spacing}
@@ -85,7 +89,7 @@ export default function TrendChart({ points }: { points: SeriesPoint[] }) {
       </Text>
       {other.length > 0 && (
         <Text style={styles.caption}>
-          Not plotted (different unit): {other.map((p) => `${p.value} ${p.unit ?? ''} on ${p.date}`.trim()).join('; ')}.
+          Not plotted (different unit): {other.map((p) => `${p.value} ${p.unit ?? ''} on ${formatDate(p.date, order)}`.trim()).join('; ')}.
         </Text>
       )}
     </View>

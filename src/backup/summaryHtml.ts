@@ -2,6 +2,7 @@
 // Self-contained (no fonts, images or scripts to fetch) and every user-entered string is escaped.
 // It lists values, dates, labs and printed ranges only, with the not-a-medical-device notice.
 import { getSeries, listMarkers, type SeriesPoint } from '../db/biomarkers';
+import { formatDate, type DateOrder } from '../utils/dates';
 import type { Db } from '../db/types';
 import { panelOf, PANEL_ORDER } from '../utils/panels';
 
@@ -19,7 +20,7 @@ export async function loadSummary(db: Db, profileId: number): Promise<SummaryMar
   return out;
 }
 
-export function summaryHtml(profileName: string, markers: SummaryMarker[], disclaimer: string, now = new Date()): string {
+export function summaryHtml(profileName: string, markers: SummaryMarker[], disclaimer: string, now = new Date(), order: DateOrder = 'ymd'): string {
   const e = escapeHtml;
   const byPanel = new Map<string, SummaryMarker[]>();
   for (const m of markers) byPanel.set(panelOf(m.key), [...(byPanel.get(panelOf(m.key)) ?? []), m]);
@@ -33,7 +34,7 @@ export function summaryHtml(profileName: string, markers: SummaryMarker[], discl
             .reverse()
             .map(
               (p) =>
-                `<tr><td>${e(p.date)}</td><td class="num">${e(String(p.value))}</td><td>${e(p.unit ?? '')}</td>` +
+                `<tr><td>${e(formatDate(p.date, order))}</td><td class="num">${e(String(p.valueText ?? p.value))}</td><td>${e(p.unit ?? '')}</td>` +
                 `<td>${e(p.rawRefText ?? '')}</td><td>${e(p.labName ?? '')}</td></tr>`,
             )
             .join('');
@@ -52,7 +53,7 @@ th,td{border:1px solid #ccc;padding:3px 5px;text-align:left}th{background:#f2f2f
 .meta,.note{color:#555}.note{margin-top:20px}
 </style></head><body>
 <h1>${e(profileName)}: recorded lab values</h1>
-<div class="meta">Made with LabTrends on ${e(now.toISOString().slice(0, 10))}. Values as entered and verified by the user.</div>
+<div class="meta">Made with LabTrends on ${e(formatDate(now.toISOString().slice(0, 10), order))}. Values as entered and verified by the user.</div>
 ${sections || '<p>No values recorded.</p>'}
 <p class="note">${e(disclaimer)}</p>
 </body></html>`;

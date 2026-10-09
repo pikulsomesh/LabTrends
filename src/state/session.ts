@@ -1,19 +1,27 @@
 // Profile actions that keep the profile list and the remembered active profile in step.
 // No React here, so it runs under vitest against testDb.
 // Imports the db modules directly, not '../db', which pulls in expo-sqlite.
-import { getActiveProfileId, setActiveProfileId } from '../db/appState';
+import { getActiveProfileId, getDatePref, setActiveProfileId, setDatePref } from '../db/appState';
 import { createProfile, deleteProfile, listProfiles, renameProfile } from '../db/profiles';
 import type { Db, Profile } from '../db/types';
+import type { DatePref } from '../utils/dates';
 
 export interface Session {
   profiles: Profile[];
   /** Always one of `profiles`, or null. */
   activeId: number | null;
+  /** Day and month order for reading and showing dates. A setting for the phone, not per profile. */
+  datePref: DatePref;
 }
 
 export async function loadSession(db: Db): Promise<Session> {
-  const [profiles, activeId] = await Promise.all([listProfiles(db), getActiveProfileId(db)]);
-  return { profiles, activeId };
+  const [profiles, activeId, datePref] = await Promise.all([listProfiles(db), getActiveProfileId(db), getDatePref(db)]);
+  return { profiles, activeId, datePref };
+}
+
+export async function changeDatePref(db: Db, pref: DatePref): Promise<Session> {
+  await setDatePref(db, pref);
+  return loadSession(db);
 }
 
 export async function selectProfile(db: Db, id: number | null): Promise<Session> {

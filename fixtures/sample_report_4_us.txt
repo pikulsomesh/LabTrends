@@ -1,0 +1,12 @@
+DUMMY REPORT - SYNTHETIC DATA FOR TESTING ONLY. NOT A REAL PERSON.
+(US layout: month first. The report date is ambiguous, the received date is not.)
+
+EXAMPLE CLINICAL LAB
+Name: Test Patient Two   DOB: 05/06/1980
+Collection Date: 04/03/2026   Received: 04/03/2026 09:10   Reported: 04/15/2026
+
+URINALYSIS
+Color ............ Yellow (Ref: Yellow)
+Clarity .......... Clear (Ref: Clear)
+Protein .......... Negative (Ref: Negative)
+Glucose .......... 1+ (Ref: Negative)
