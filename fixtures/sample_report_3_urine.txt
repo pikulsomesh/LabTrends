@@ -1,0 +1,30 @@
+DUMMY REPORT - SYNTHETIC DATA FOR TESTING ONLY. NOT A REAL PERSON.
+(Urine routine: words instead of numbers, and a date that reads either way.)
+
+SAMPLE DIAGNOSTICS PVT LTD
+Patient: Test Patient One      Age/Sex: 42 / M
+Collected: 01/07/2026          Reported: 01/07/2026
+
+URINE ROUTINE EXAMINATION
+Test Name                     Result         Unit      Reference Range
+PHYSICAL EXAMINATION
+Colour                        Pale Yellow              Pale Yellow
+Appearance                    Slightly Turbid          Clear
+Specific Gravity              1.015                    1.005 - 1.030
+CHEMICAL EXAMINATION
+Reaction (pH)                 6.0                      4.6 - 8.0
+Protein                       Trace                    Nil
+Glucose                       Nil                      Nil
+Ketone Bodies                 Negative                 Negative
+Blood                         Positive (+)             Negative
+Urobilinogen                  Normal                   Normal
+Nitrite                       Not Detected             Not Detected
+MICROSCOPIC EXAMINATION
+Pus Cells                     2-4            /hpf      0 - 5
+RBC                           Nil            /hpf      0 - 2
+Epithelial Cells              1-2            /hpf
+Casts                         Absent                   Absent
+Crystals                      Absent
+
+COMPLETE BLOOD COUNT
+RBC Count                     4.8            mill/cumm 4.5 - 5.5

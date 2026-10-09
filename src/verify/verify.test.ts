@@ -10,7 +10,7 @@ import { canonicalize } from '../utils/aliases';
 import { addManualRow, draftFromExtraction, parseNumber, removeRow, updateRow, validateDraft, type Draft } from './draft';
 import { findDuplicates, saveDraft } from './save';
 
-const fixture = (n: number) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
+const fixture = (n: number | string) => readFileSync(`${__dirname}/../../fixtures/sample_report_${n}.txt`, 'utf8');
 const H1 = '1'.repeat(64);
 const H2 = '2'.repeat(64);
 const NOW = new Date('2026-10-05T12:00:00');
@@ -154,5 +154,56 @@ describe('saveDraft', () => {
     await saveDraft(db, profileId, await draftFor(1), NOW);
     const other = (await createProfile(db, 'Ravi')).id;
     expect(await findDuplicates(db, other, [H1])).toEqual([]);
+  });
+});
+
+describe('text results and date order', () => {
+  const urine = async (order?: 'dmy' | 'mdy') =>
+    draftFromExtraction(await extractReport(fixture('3_urine'), null, { dateOrder: order }), [H1], order);
+
+  it('marks rows printed as words as text rows', async () => {
+    const d = await urine();
+    const protein = d.rows.find((r) => r.name === 'Protein')!;
+    expect(protein).toMatchObject({ kind: 'text', value: 'Trace', rawRefText: 'Nil', specimen: 'urine' });
+    expect(d.rows.find((r) => r.name === 'Specific Gravity')).toMatchObject({ kind: 'number', value: '1.015' });
+  });
+
+  it('saves text rows as words with the printed reference and no bounds', async () => {
+    const v = validateDraft(await urine(), canonicalize, NOW);
+    expect(v.ok).toBe(true);
+    if (!v.ok) return;
+    expect(v.biomarkers.find((b) => b.name === 'Colour')).toEqual({
+      name: 'Colour', canonicalName: 'Urine Colour', value: null, valueText: 'Pale Yellow', unit: null, refLow: null, refHigh: null, rawRefText: 'Pale Yellow',
+    });
+    expect(v.biomarkers.find((b) => b.name === 'RBC')).toMatchObject({ canonicalName: 'Urine RBC', valueText: 'Nil', unit: '/hpf' });
+  });
+
+  it('asks for the words when a text row is empty, and a number when switched back', async () => {
+    let d = await urine();
+    const k = d.rows.find((r) => r.name === 'Protein')!.key;
+    d = updateRow(d, k, { value: ' ' });
+    let v = validateDraft(d, canonicalize, NOW);
+    expect(!v.ok && v.errors[`${k}.value`]).toMatch(/as printed/);
+    d = updateRow(d, k, { value: 'Trace', kind: 'number' });
+    v = validateDraft(d, canonicalize, NOW);
+    expect(!v.ok && v.errors[`${k}.value`]).toMatch(/number/);
+  });
+
+  it('shows and reads the date field in the user order', async () => {
+    const dmy = await urine('dmy');
+    expect(dmy.date).toBe('01/07/2026');
+    const v1 = validateDraft(dmy, canonicalize, NOW, 'dmy');
+    expect(v1.ok && v1.report.date).toBe('2026-07-01');
+
+    const mdy = await urine('mdy');
+    expect(mdy.date).toBe('01/07/2026');
+    const v2 = validateDraft(mdy, canonicalize, NOW, 'mdy');
+    expect(v2.ok && v2.report.date).toBe('2026-01-07');
+
+    // yyyy-mm-dd always works, whatever the order.
+    const v3 = validateDraft({ ...mdy, date: '2026-03-12' }, canonicalize, NOW, 'mdy');
+    expect(v3.ok && v3.report.date).toBe('2026-03-12');
+    const v4 = validateDraft({ ...mdy, date: '31/12/2025' }, canonicalize, NOW, 'mdy');
+    expect(!v4.ok && v4.errors.date).toBe('Enter the collection date as mm/dd/yyyy.');
   });
 });

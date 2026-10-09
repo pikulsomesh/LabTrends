@@ -10,6 +10,7 @@ import { HELP_REPLY, type Answer } from '../chat/answer';
 import { ask, loadMarkerIndex } from '../chat/chat';
 import type { MarkerIndex } from '../chat/intent';
 import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
+import { formatDate } from '../utils/dates';
 import { Button, Title } from '../ui';
 import { color, radius, space, topInset } from '../ui/theme';
 
@@ -17,7 +18,7 @@ type Message = { from: 'you'; text: string } | { from: 'app'; answer: Answer };
 
 export default function ChatScreen() {
   useSecureScreen();
-  const { db } = useProfiles();
+  const { db, dateOrder } = useProfiles();
   const profile = useActiveProfile();
   const [index, setIndex] = useState<MarkerIndex | null>(null);
   const [messages, setMessages] = useState<Message[]>([{ from: 'app', answer: { text: HELP_REPLY } }]);
@@ -38,7 +39,7 @@ export default function ChatScreen() {
     setText('');
     setMessages((m) => [...m, { from: 'you', text: q }]);
     try {
-      const answers = await ask(db, profile.id, index, q);
+      const answers = await ask(db, profile.id, index, q, (iso) => formatDate(iso, dateOrder));
       setMessages((m) => [...m, ...answers.map((answer) => ({ from: 'app' as const, answer }))]);
     } catch (e) {
       setMessages((m) => [...m, { from: 'app', answer: { text: `Something went wrong reading your data: ${String(e)}` } }]);

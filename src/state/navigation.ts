@@ -8,6 +8,7 @@ export type Route =
   | { name: 'marker'; key: string }
   | { name: 'chat' }
   | { name: 'backup' }
+  | { name: 'settings' }
   | { name: 'spike' };
 
 export interface NavState {
@@ -20,6 +21,7 @@ export type NavAction =
   | { type: 'openMarker'; key: string }
   | { type: 'openChat' }
   | { type: 'openBackup' }
+  | { type: 'openSettings' }
   | { type: 'openSpike' }
   | { type: 'closeProfile' }
   | { type: 'back' };
@@ -49,6 +51,9 @@ export function navReducer(s: NavState, a: NavAction): NavState {
     case 'openBackup':
       // From the landing screen: a backup covers every profile.
       return { stack: [{ name: 'profiles' }, { name: 'backup' }] };
+    case 'openSettings':
+      // From the landing screen: settings are for the phone, not one profile.
+      return { stack: [{ name: 'profiles' }, { name: 'settings' }] };
     case 'closeProfile':
       return { stack: [{ name: 'profiles' }] };
     case 'openSpike':

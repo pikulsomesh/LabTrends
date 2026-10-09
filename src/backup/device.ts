@@ -10,6 +10,7 @@ import { DISCLAIMER } from '../components/Disclaimer';
 import type { Db } from '../db/types';
 import { decryptBackup, encryptBackup } from './crypto';
 import { collectBackup, parseBackup, restoreBackup, type RestoreSummary } from './data';
+import type { DateOrder } from '../utils/dates';
 import { loadSummary, summaryHtml } from './summaryHtml';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -32,8 +33,8 @@ async function shareThenDelete(uri: string, mimeType: string, dialogTitle: strin
   }
 }
 
-export async function sharePdfSummary(db: Db, profileId: number, profileName: string) {
-  const html = summaryHtml(profileName, await loadSummary(db, profileId), DISCLAIMER);
+export async function sharePdfSummary(db: Db, profileId: number, profileName: string, order: DateOrder = 'ymd') {
+  const html = summaryHtml(profileName, await loadSummary(db, profileId), DISCLAIMER, new Date(), order);
   const { uri } = await Print.printToFileAsync({ html });
   await shareThenDelete(uri, 'application/pdf', 'Save or send the PDF summary');
 }

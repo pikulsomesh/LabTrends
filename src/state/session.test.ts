@@ -3,7 +3,7 @@ import { getActiveProfileId, setActiveProfileId } from '../db/appState';
 import { createProfile } from '../db/profiles';
 import { prepareDatabase } from '../db/schema';
 import { openTestDb } from '../db/testDb';
-import { addProfile, editProfileName, loadSession, removeProfile, selectProfile } from './session';
+import { addProfile, changeDatePref, editProfileName, loadSession, removeProfile, selectProfile } from './session';
 
 let db: ReturnType<typeof openTestDb>;
 
@@ -15,7 +15,7 @@ afterEach(() => db.close());
 
 describe('active profile', () => {
   it('starts with no profiles and none active', async () => {
-    expect(await loadSession(db)).toEqual({ profiles: [], activeId: null });
+    expect(await loadSession(db)).toEqual({ profiles: [], activeId: null, datePref: 'auto' });
   });
 
   it('makes a new profile active and remembers it', async () => {
@@ -45,7 +45,7 @@ describe('active profile', () => {
     await selectProfile(db, a.id);
     expect((await removeProfile(db, r.id)).activeId).toBe(a.id);
     const s = await removeProfile(db, a.id);
-    expect(s).toEqual({ profiles: [], activeId: null });
+    expect(s).toEqual({ profiles: [], activeId: null, datePref: 'auto' });
   });
 
   it('renames without changing the active profile', async () => {
@@ -57,6 +57,13 @@ describe('active profile', () => {
 
   it('rejects an empty name and changes nothing', async () => {
     await expect(addProfile(db, '  ')).rejects.toThrow(/empty/);
-    expect(await loadSession(db)).toEqual({ profiles: [], activeId: null });
+    expect(await loadSession(db)).toEqual({ profiles: [], activeId: null, datePref: 'auto' });
+  });
+});
+
+describe('date setting', () => {
+  it('is part of the session and survives a reload', async () => {
+    expect((await changeDatePref(db, 'mdy')).datePref).toBe('mdy');
+    expect((await loadSession(db)).datePref).toBe('mdy');
   });
 });

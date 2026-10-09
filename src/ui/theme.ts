@@ -35,6 +35,7 @@ export const panelTint: Record<string, { bg: string; ink: string }> = {
   Thyroid: { bg: '#E6E1FF', ink: '#4B3FAE' },
   Kidney: { bg: '#D9F4EA', ink: '#25664A' },
   'Vitamins and iron': { bg: '#EAF6C9', ink: '#55671A' },
+  Urine: { bg: '#FFF6CF', ink: '#6E5A12' },
   Other: { bg: '#ECEAF5', ink: '#4D4A66' },
 };
 export const tintFor = (panel: string) => panelTint[panel] ?? panelTint.Other;

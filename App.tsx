@@ -9,6 +9,7 @@ import IngestScreen from './src/screens/IngestScreen';
 import MarkerScreen from './src/screens/MarkerScreen';
 import ProfileHomeScreen from './src/screens/ProfileHomeScreen';
 import ProfilesScreen from './src/screens/ProfilesScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 import SpikeScreen from './src/spike/SpikeScreen';
 import { ActiveProfileProvider, useProfiles } from './src/state/ActiveProfile';
 import { canGoBack, currentRoute, initialNav, navReducer } from './src/state/navigation';
@@ -69,6 +70,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
   if (route.name === 'marker' && active) return <MarkerScreen markerKey={route.key} onEmpty={goBack} />;
   if (route.name === 'chat' && active) return <ChatScreen />;
   if (route.name === 'backup') return <BackupScreen />;
+  if (route.name === 'settings') return <SettingsScreen />;
   if (route.name === 'profileHome' && active) {
     return (
       <ProfileHomeScreen
@@ -83,6 +85,7 @@ function Navigator({ initialActiveId }: { initialActiveId: number | null }) {
     <ProfilesScreen
       onOpenProfile={() => dispatch({ type: 'openProfile' })}
       onOpenBackup={() => dispatch({ type: 'openBackup' })}
+      onOpenSettings={() => dispatch({ type: 'openSettings' })}
       onOpenSpike={__DEV__ ? () => dispatch({ type: 'openSpike' }) : undefined}
     />
   );

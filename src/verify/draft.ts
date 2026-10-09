@@ -3,10 +3,15 @@
 // the NewReport and NewBiomarker rows saveVerifiedReport writes. Pure, so it is unit-tested.
 import type { Extraction } from '../ai/extract';
 import type { NewBiomarker, NewReport } from '../db/types';
-import type { Canonicalizer } from '../utils/aliases';
+import { canonicalizeIn, type Canonicalizer, type Specimen } from '../utils/aliases';
+import { datePattern, formatDateInput, parseDateInput, type DateOrder } from '../utils/dates';
 
 export interface DraftRow {
   key: string;
+  /** 'text' for a result printed as words ("Trace", "Pale yellow"); 'number' for a measured value. */
+  kind: 'number' | 'text';
+  /** 'urine' when the row came from under a urine heading; it decides the canonical name. */
+  specimen: Specimen;
   name: string;
   /** Text fields, exactly as the user typed them. Parsed only on save. */
   value: string;
@@ -21,6 +26,7 @@ export interface DraftRow {
 }
 
 export interface Draft {
+  /** As shown in the date field: in the user's day and month order, or yyyy-mm-dd. */
   date: string;
   labName: string;
   category: string;
@@ -46,15 +52,18 @@ function commonCategory(categories: (string | null)[]): string {
   return best;
 }
 
-export function draftFromExtraction(extraction: Extraction, fileHashes: string[]): Draft {
+/** `order` is how the date field shows the date; yyyy-mm-dd when not given. */
+export function draftFromExtraction(extraction: Extraction, fileHashes: string[], order: DateOrder = 'ymd'): Draft {
   return {
-    date: extraction.date ?? '',
+    date: extraction.date ? formatDateInput(extraction.date, order) : '',
     labName: '',
     category: commonCategory(extraction.rows.map((r) => r.category)),
     rows: extraction.rows.map((r) => ({
       key: key(),
+      kind: r.valueText != null ? 'text' : 'number',
+      specimen: r.specimen,
       name: r.name,
-      value: String(r.value),
+      value: r.valueText ?? String(r.value ?? ''),
       unit: r.unit,
       refLow: numText(r.refLow),
       refHigh: numText(r.refHigh),
@@ -72,6 +81,8 @@ export function draftFromExtraction(extraction: Extraction, fileHashes: string[]
 export function addManualRow(draft: Draft, sourceLine = ''): Draft {
   const row: DraftRow = {
     key: key(),
+    kind: 'number',
+    specimen: null,
     name: '',
     value: '',
     unit: '',
@@ -90,7 +101,7 @@ export function addManualRow(draft: Draft, sourceLine = ''): Draft {
   };
 }
 
-export function updateRow(draft: Draft, rowKey: string, patch: Partial<Omit<DraftRow, 'key' | 'origin' | 'sourceLine'>>): Draft {
+export function updateRow(draft: Draft, rowKey: string, patch: Partial<Omit<DraftRow, 'key' | 'origin' | 'sourceLine' | 'specimen'>>): Draft {
   // Editing a bound means the printed range text no longer describes it; it is rebuilt on save.
   const rangeEdited = 'refLow' in patch || 'refHigh' in patch;
   return {
@@ -131,10 +142,16 @@ export type Validated =
 const localDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export function validateDraft(draft: Draft, canonicalize: Canonicalizer, now = new Date()): Validated {
+/** Text results are short words; anything longer is a misread line, not a result. */
+export const MAX_TEXT_RESULT = 60;
+
+/** The date field as ISO yyyy-mm-dd, read in the user's order (yyyy-mm-dd always works), or null. */
+export const draftDate = (draft: Draft, order: DateOrder = 'ymd') => parseDateInput(draft.date, order);
+
+export function validateDraft(draft: Draft, canonicalize: Canonicalizer, now = new Date(), order: DateOrder = 'ymd'): Validated {
   const errors: DraftErrors = {};
-  const date = draft.date.trim();
-  if (!isValidDate(date)) errors.date = 'Enter the collection date as yyyy-mm-dd.';
+  const date = draftDate(draft, order) ?? '';
+  if (!isValidDate(date)) errors.date = `Enter the collection date as ${datePattern(order)}.`;
   else if (date > localDate(now)) errors.date = 'The date is in the future.';
 
   const included = draft.rows.filter((r) => r.included);
@@ -144,6 +161,24 @@ export function validateDraft(draft: Draft, canonicalize: Canonicalizer, now = n
   for (const r of included) {
     const name = r.name.trim();
     if (!name) errors[`${r.key}.name`] = 'Enter the test name.';
+    if (r.kind === 'text') {
+      // A result printed as words: kept as typed, with the printed reference as text. No bounds.
+      const text = r.value.trim().replace(/\s+/g, ' ');
+      if (!text) errors[`${r.key}.value`] = 'Enter the result as printed, like Trace or Pale yellow.';
+      else if (text.length > MAX_TEXT_RESULT) errors[`${r.key}.value`] = `Keep the result to ${MAX_TEXT_RESULT} characters.`;
+      if (!name || errors[`${r.key}.value`]) continue;
+      biomarkers.push({
+        name,
+        canonicalName: canonicalizeIn(canonicalize, name, r.specimen),
+        value: null,
+        valueText: text,
+        unit: r.unit.trim() || null,
+        refLow: null,
+        refHigh: null,
+        rawRefText: r.rawRefText.trim() || null,
+      });
+      continue;
+    }
     const value = parseNumber(r.value);
     if (value == null) errors[`${r.key}.value`] = 'Enter a number, like 13.4.';
     const refLow = r.refLow.trim() ? parseNumber(r.refLow) : null;
@@ -154,8 +189,9 @@ export function validateDraft(draft: Draft, canonicalize: Canonicalizer, now = n
     if (!name || value == null) continue;
     biomarkers.push({
       name,
-      canonicalName: canonicalize(name),
+      canonicalName: canonicalizeIn(canonicalize, name, r.specimen),
       value,
+      valueText: null,
       unit: r.unit.trim() || null,
       refLow,
       refHigh,

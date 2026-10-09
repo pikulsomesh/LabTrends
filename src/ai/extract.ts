@@ -1,7 +1,7 @@
 // Report text to candidate rows (PLAN.md Phase 5). The deterministic parser runs first; the SLM
 // sees only the lines it could not read, in small batches, and its context is released when
 // extraction ends, even on failure. Nothing here writes to the DB: rows go to verification.
-import { parseReport, type ParsedRow } from '../utils/parser';
+import { parseReport, type ParseOptions, type ParsedRow } from '../utils/parser';
 import { acceptSlmRows, SLM_SCHEMA, SLM_SYSTEM, slmUserPrompt } from './slmRows';
 
 export interface SlmSession {
@@ -31,8 +31,12 @@ export const SLM_BATCH = 1;
 /** More unparsed lines than this is not a report the SLM can rescue; the rest stay unparsed. */
 export const SLM_MAX_LINES = 60;
 
-export async function extractReport(text: string, loadSlm: (() => Promise<SlmSession>) | null): Promise<Extraction> {
-  const parsed = parseReport(text);
+export async function extractReport(
+  text: string,
+  loadSlm: (() => Promise<SlmSession>) | null,
+  opts: ParseOptions = {},
+): Promise<Extraction> {
+  const parsed = parseReport(text, opts);
   const rows: ExtractedRow[] = parsed.rows.map((r) => ({ ...r, origin: 'parser' }));
   const base = { date: parsed.date, rows, unparsed: parsed.unparsed };
 

@@ -2,6 +2,7 @@
 // lab data read it from useActiveProfile() and pass its id to every query (CLAUDE.md).
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { Db, Profile } from '../db';
+import { resolveDateOrder, type DateOrder, type DatePref } from '../utils/dates';
 import * as session from './session';
 
 interface ActiveProfileValue {
@@ -14,6 +15,10 @@ interface ActiveProfileValue {
   remove(id: number): Promise<void>;
   /** Re-reads profiles from the database, after a restore. */
   reload(): Promise<void>;
+  /** The date setting, and the day and month order it resolves to on this phone. */
+  datePref: DatePref;
+  dateOrder: DateOrder;
+  setDatePref(pref: DatePref): Promise<void>;
 }
 
 const Ctx = createContext<ActiveProfileValue | null>(null);
@@ -41,6 +46,9 @@ export function ActiveProfileProvider({ db, initial, children }: Props) {
       rename: apply(session.editProfileName),
       remove: apply(session.removeProfile),
       reload: apply(session.loadSession),
+      datePref: state.datePref,
+      dateOrder: resolveDateOrder(state.datePref),
+      setDatePref: apply(session.changeDatePref),
     }),
     [db, state, apply],
   );
@@ -59,3 +67,6 @@ export function useActiveProfile(): Profile {
   if (!active) throw new Error('No active profile.');
   return active;
 }
+
+/** The day and month order for reading and showing dates. */
+export const useDateOrder = (): DateOrder => useProfiles().dateOrder;

@@ -10,7 +10,8 @@ import { extractReport, type Extraction, type ExtractedRow } from '../ai/extract
 import { activeModel, importModel, loadSlm, removeModel, type ModelInfo } from '../ai/model';
 import { appendPages, ingest, type Extracted, type IngestInput } from '../ingest/ingest';
 import { deviceDeps, pickImages, pickPdf, takePhoto } from '../ingest/native';
-import { useActiveProfile } from '../state/ActiveProfile';
+import { useActiveProfile, useProfiles } from '../state/ActiveProfile';
+import { formatDate } from '../utils/dates';
 import { draftFromExtraction, type Draft } from '../verify/draft';
 import { Body, Busy, Button, Card, Heading, Notice, Screen, Small, Title } from '../ui';
 import { color, radius, space } from '../ui/theme';
@@ -42,6 +43,7 @@ interface Props {
 
 export default function IngestScreen({ onDone }: Props) {
   const profile = useActiveProfile();
+  const { dateOrder } = useProfiles();
   const [result, setResult] = useState<Extracted | null>(null);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -66,7 +68,7 @@ export default function IngestScreen({ onDone }: Props) {
 
   async function extract(text: string, m: ModelInfo | null) {
     setExtraction(null);
-    setExtraction(await extractReport(text, m ? () => loadSlm(m) : null));
+    setExtraction(await extractReport(text, m ? () => loadSlm(m) : null, { dateOrder, today: new Date() }));
   }
 
   const add = (pick: Picker, append: boolean) =>
@@ -137,7 +139,7 @@ export default function IngestScreen({ onDone }: Props) {
               {extraction &&
                 ` ${extraction.rows.length} value${extraction.rows.length === 1 ? '' : 's'} found` +
                   (fromModel ? `, ${fromModel} by the local model` : '') +
-                  (extraction.date ? `. Report date ${extraction.date}.` : '. No report date found.')}
+                  (extraction.date ? `. Report date ${formatDate(extraction.date, dateOrder)}.` : '. No report date found.')}
             </Text>
           </Card>
           <View style={styles.actions}>
@@ -145,7 +147,7 @@ export default function IngestScreen({ onDone }: Props) {
               <Button
                 title="Review and save"
                 disabled={!!busy}
-                onPress={() => setDraft(draftFromExtraction(extraction, result.fileHashes))}
+                onPress={() => setDraft(draftFromExtraction(extraction, result.fileHashes, dateOrder))}
               />
             )}
             {canAppend && <Button title="Add a page: take a photo" variant="soft" disabled={!!busy} onPress={() => add(takePhoto, true)} />}
@@ -157,7 +159,7 @@ export default function IngestScreen({ onDone }: Props) {
               <Heading>Found so far</Heading>
               {extraction.rows.map((item, i) => (
                 <Text key={i} style={styles.row}>
-                  {item.name}: {item.value} {item.unit}
+                  {item.name}: {item.valueText ?? item.value} {item.unit}
                   {rangeLabel(item)}
                   {item.origin === 'slm' ? '  [model]' : ''}
                 </Text>

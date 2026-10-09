@@ -37,7 +37,10 @@ export interface NewBiomarker {
   /** Name as printed on the report. */
   name: string;
   canonicalName: string | null;
-  value: number;
+  /** The measured number. Null when the result is printed as words: then `valueText` holds it. */
+  value: number | null;
+  /** A result printed as words ("Trace", "Pale yellow", "2-4"). Exactly one of value and valueText is set. */
+  valueText?: string | null;
   unit: string | null;
   refLow: number | null;
   refHigh: number | null;

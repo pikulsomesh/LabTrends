@@ -38,8 +38,8 @@ export async function collectBackup(db: Db, now = new Date()): Promise<BackupDat
     );
     const rs: BackupReport[] = [];
     for (const r of reports) {
-      const values = await db.getAllAsync<{ name: string; canonical_name: string | null; value: number; unit: string | null; ref_low: number | null; ref_high: number | null; raw_ref_text: string | null }>(
-        'SELECT name, canonical_name, value, unit, ref_low, ref_high, raw_ref_text FROM biomarkers WHERE report_id = ? ORDER BY id',
+      const values = await db.getAllAsync<{ name: string; canonical_name: string | null; value: number | null; value_text: string | null; unit: string | null; ref_low: number | null; ref_high: number | null; raw_ref_text: string | null }>(
+        'SELECT name, canonical_name, value, value_text, unit, ref_low, ref_high, raw_ref_text FROM biomarkers WHERE report_id = ? ORDER BY id',
         [r.id],
       );
       rs.push({
@@ -51,6 +51,7 @@ export async function collectBackup(db: Db, now = new Date()): Promise<BackupDat
           name: b.name,
           canonicalName: b.canonical_name,
           value: b.value,
+          valueText: b.value_text,
           unit: b.unit,
           refLow: b.ref_low,
           refHigh: b.ref_high,
@@ -103,7 +104,7 @@ export function parseBackup(json: unknown): BackupData {
         try {
           const report = cleanReport(r as unknown as NewReport);
           const biomarkers = (r.biomarkers as unknown[]).map((b, bi) => {
-            if (!isObj(b) || !str(b.name) || !str(b.canonicalName, true) || typeof b.value !== 'number' || !str(b.unit, true) || !num(b.refLow) || !num(b.refHigh) || !str(b.rawRefText, true)) bad(`${at}, value ${bi + 1}`);
+            if (!isObj(b) || !str(b.name) || !str(b.canonicalName, true) || !(typeof b.value === 'number' || (b.value === null && typeof b.valueText === 'string')) || !(b.valueText === undefined || str(b.valueText, true)) || !str(b.unit, true) || !num(b.refLow) || !num(b.refHigh) || !str(b.rawRefText, true)) bad(`${at}, value ${bi + 1}`);
             return cleanBiomarker(b as unknown as NewBiomarker, bi);
           });
           if (!biomarkers.length) bad(`${at} has no values`);
@@ -157,9 +158,9 @@ export async function restoreBackup(db: Db, data: BackupData): Promise<RestoreSu
         summary.reports++;
         for (const b of r.biomarkers) {
           await db.runAsync(
-            `INSERT INTO biomarkers (report_id, name, canonical_name, value, unit, ref_low, ref_high, raw_ref_text)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [reportId, b.name, b.canonicalName, b.value, b.unit, b.refLow, b.refHigh, b.rawRefText],
+            `INSERT INTO biomarkers (report_id, name, canonical_name, value, value_text, unit, ref_low, ref_high, raw_ref_text)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [reportId, b.name, b.canonicalName, b.value, b.valueText ?? null, b.unit, b.refLow, b.refHigh, b.rawRefText],
           );
           summary.values++;
         }

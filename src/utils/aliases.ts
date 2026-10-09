@@ -108,6 +108,31 @@ export const ALIAS_SEED: Record<string, string[]> = {
   'hs-CRP': ['hs crp', 'hscrp', 'high sensitivity crp', 'high sensitivity c reactive protein'],
   'Fasting Insulin': ['fasting insulin', 'insulin fasting'],
   PSA: ['psa', 'total psa', 'prostate specific antigen'],
+
+  // Urine routine. Printed names are short ("Protein", "RBC", "Colour"), so they match only with the
+  // "urine" prefix that canonicalizeIn adds under a urine heading, or when printed with it.
+  'Urine Colour': ['urine colour', 'urine color'],
+  'Urine Appearance': ['urine appearance', 'urine transparency', 'urine clarity'],
+  'Urine Specific Gravity': ['urine specific gravity', 'urine sp gravity', 'urine sg'],
+  'Urine pH': ['urine ph', 'urine reaction', 'urine reaction ph'],
+  'Urine Volume': ['urine volume', 'urine quantity'],
+  'Urine Protein': ['urine protein', 'urine proteins', 'urine albumin'],
+  'Urine Glucose': ['urine glucose', 'urine sugar'],
+  'Urine Ketones': ['urine ketones', 'urine ketone', 'urine ketone bodies', 'urine acetone'],
+  'Urine Bilirubin': ['urine bilirubin', 'urine bile pigments', 'urine bile pigment'],
+  'Urine Bile Salts': ['urine bile salts', 'urine bile salt'],
+  'Urine Urobilinogen': ['urine urobilinogen'],
+  'Urine Blood': ['urine blood', 'urine occult blood'],
+  'Urine Nitrite': ['urine nitrite', 'urine nitrites'],
+  'Urine Leukocyte Esterase': ['urine leukocyte esterase', 'urine leucocyte esterase'],
+  'Urine Pus Cells': ['urine pus cells', 'urine pus cell', 'urine wbc', 'urine wbcs', 'urine white blood cells'],
+  'Urine RBC': ['urine rbc', 'urine rbcs', 'urine red blood cells', 'urine red cells', 'urine erythrocytes'],
+  'Urine Epithelial Cells': ['urine epithelial cells', 'urine epithelial cell', 'urine squamous epithelial cells'],
+  'Urine Casts': ['urine casts', 'urine cast'],
+  'Urine Crystals': ['urine crystals', 'urine crystal'],
+  'Urine Bacteria': ['urine bacteria'],
+  'Urine Yeast': ['urine yeast', 'urine yeast cells', 'urine budding yeast'],
+  'Urine Mucus': ['urine mucus', 'urine mucus threads'],
 };
 
 /** Lower-cases and collapses everything but letters and digits to single spaces. */
@@ -158,3 +183,24 @@ export function createCanonicalizer(entries: Iterable<[string, string]>): Canoni
 
 /** Maps a printed test name to a canonical name using the seed, or null when unknown. */
 export const canonicalize: Canonicalizer = createCanonicalizer(seedEntries());
+
+/** Where a sample came from, when the report's heading says. Only urine needs telling apart. */
+export type Specimen = 'urine' | null;
+
+const URINE_PREFIX = 'Urine ';
+
+/**
+ * Canonical name for a row printed under a specimen heading. Under a urine heading, "RBC" or
+ * "Albumin" must not join the blood test of the same name, so the name is tried with "urine" in
+ * front first. A urine name nothing matches becomes "Urine <name>", keeping it apart all the same.
+ */
+export function canonicalizeIn(canon: Canonicalizer, printed: string, specimen: Specimen): string | null {
+  if (specimen !== 'urine') return canon(printed);
+  const name = printed.trim();
+  if (/^urine\b/i.test(name)) return canon(name);
+  // Only a urine marker counts: the canonicalizer's part-by-part fallback could otherwise match
+  // "Hb" in "Mucus/Hb" to the blood test.
+  const hit = canon(`urine ${name}`);
+  if (hit?.startsWith(URINE_PREFIX)) return hit;
+  return `${URINE_PREFIX}${name}`.slice(0, 120);
+}

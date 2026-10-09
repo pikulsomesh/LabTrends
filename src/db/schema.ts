@@ -54,6 +54,32 @@ export const MIGRATIONS: readonly string[] = [
   );
   INSERT INTO app_state (id) VALUES (1);
   `,
+  // 3: results printed as words ("Trace", "Pale yellow"), kept in value_text with value NULL, and
+  // the user's day and month order. SQLite cannot drop NOT NULL in place, so biomarkers is rebuilt.
+  `
+  CREATE TABLE biomarkers_v3 (
+    id INTEGER PRIMARY KEY,
+    report_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+    name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 120),
+    canonical_name TEXT CHECK (length(canonical_name) <= 120),
+    value REAL,
+    value_text TEXT CHECK (value_text IS NULL OR length(trim(value_text)) BETWEEN 1 AND 60),
+    unit TEXT CHECK (length(unit) <= 40),
+    ref_low REAL,
+    ref_high REAL,
+    raw_ref_text TEXT CHECK (length(raw_ref_text) <= 120),
+    CHECK ((value IS NULL) <> (value_text IS NULL))
+  );
+  INSERT INTO biomarkers_v3 (id, report_id, name, canonical_name, value, unit, ref_low, ref_high, raw_ref_text)
+    SELECT id, report_id, name, canonical_name, value, unit, ref_low, ref_high, raw_ref_text FROM biomarkers;
+  DROP TABLE biomarkers;
+  ALTER TABLE biomarkers_v3 RENAME TO biomarkers;
+  CREATE INDEX biomarkers_report ON biomarkers(report_id);
+  CREATE INDEX biomarkers_canonical ON biomarkers(canonical_name);
+
+  ALTER TABLE app_state ADD COLUMN date_pref TEXT NOT NULL DEFAULT 'auto'
+    CHECK (date_pref IN ('auto', 'dmy', 'mdy', 'ymd'));
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

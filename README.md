@@ -9,8 +9,8 @@ An offline, privacy-first Android app that turns scattered lab reports (PDFs and
 
 1. Ingest a lab report (camera, image, or PDF).
 2. Extract text on-device (PDF text layer first, OCR for scans).
-3. Parse biomarkers with deterministic rules, falling back to a small local model.
-4. You verify and correct every value before anything is saved.
+3. Parse biomarkers with deterministic rules, falling back to a small local model. Results printed as words (urine colour, "Trace" protein, "Positive (+)" blood, "2-4 /hpf") are kept as text.
+4. You verify and correct every value before anything is saved. Dates like 01/07/2026 are read day first or month first from the phone's region (no location access), and the report's own unambiguous dates settle it first. Settings has a manual override.
 5. View trends over time per profile. Ask simple questions in a data-only chat ("show my ALT trend").
 6. Export a PDF, or back up and restore an encrypted file to move to a new phone.
 

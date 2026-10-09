@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ALIAS_SEED, canonicalize, createCanonicalizer, normalizeName, seedEntries } from './aliases';
+import { ALIAS_SEED, canonicalize, canonicalizeIn, createCanonicalizer, normalizeName, seedEntries } from './aliases';
 import { parseReport } from './parser';
 
 const fixture = (n: string) => readFileSync(join(__dirname, '../../fixtures', n), 'utf8');
@@ -29,7 +29,7 @@ describe('alias seed', () => {
     for (const [alias] of seedEntries()) expect(alias).toBe(normalizeName(alias));
   });
 
-  it.each(['sample_report_1.txt', 'sample_report_2.txt'])('canonicalizes every row of %s', (f) => {
+  it.each(['sample_report_1.txt', 'sample_report_2.txt', 'sample_report_3_urine.txt', 'sample_report_4_us.txt'])('canonicalizes every row of %s', (f) => {
     const unknown = parseReport(fixture(f)).rows.filter((r) => r.canonicalName === null);
     expect(unknown.map((r) => r.name)).toEqual([]);
   });
@@ -64,5 +64,27 @@ describe('createCanonicalizer', () => {
     const c = createCanonicalizer([['Thyro-Marker X', 'Marker X']]);
     expect(c('thyro marker x')).toBe('Marker X');
     expect(c('Something (THYRO MARKER X)')).toBe('Marker X');
+  });
+});
+
+describe('canonicalizeIn', () => {
+  it.each([
+    ['RBC', 'Urine RBC'],
+    ['Albumin', 'Urine Protein'],
+    ['Sugar', 'Urine Glucose'],
+    ['Pus Cells/WBC', 'Urine Pus Cells'],
+    ['Urine Sugar', 'Urine Glucose'],
+    ['Mucus Threads', 'Urine Mucus'],
+    ['Amorphous Deposits', 'Urine Amorphous Deposits'],
+    ['Mucus/Hb', 'Urine Mucus'],
+  ])('urine %s -> %s', (printed, canonical) => expect(canonicalizeIn(canonicalize, printed, 'urine')).toBe(canonical));
+
+  it('never maps a urine row to a blood test', () => {
+    expect(canonicalizeIn(canonicalize, 'Hb', 'urine')).toBe('Urine Hb');
+  });
+
+  it('leaves rows outside a urine section as they were', () => {
+    expect(canonicalizeIn(canonicalize, 'RBC', null)).toBe('RBC');
+    expect(canonicalizeIn(canonicalize, 'Protein', null)).toBeNull();
   });
 });

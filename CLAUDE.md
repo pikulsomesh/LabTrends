@@ -22,7 +22,7 @@ Project: offline Android app for multi-profile lab-report trends. Author: Somesh
 
 ## Engineering rules
 
-- Schema: profiles; reports (profile_id, date, category, lab_name, source_file_hash); biomarkers (report_id, name, canonical_name, value REAL, unit, ref_low, ref_high, raw_ref_text). Alias table maps SGPT to ALT and similar. Foreign keys with ON DELETE CASCADE. Use PRAGMA user_version for migrations.
+- Schema: profiles; reports (profile_id, date, category, lab_name, source_file_hash); biomarkers (report_id, name, canonical_name, value REAL, value_text for results printed as words, unit, ref_low, ref_high, raw_ref_text; exactly one of value and value_text). Alias table maps SGPT to ALT and similar. Foreign keys with ON DELETE CASCADE. Use PRAGMA user_version for migrations.
 - Every data query filters by the active profile_id.
 - Android: allowBackup=false, FLAG_SECURE on sensitive screens, optional biometric lock.
 - Backups: AES-GCM with a PBKDF2 or Argon2 derived key from a proven library. Never hand-roll crypto.

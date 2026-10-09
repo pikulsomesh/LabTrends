@@ -163,7 +163,7 @@ export function scoreOutputs(outputs: EvalOutput[], items: GoldItem[] = GOLDEN, 
         kind.correct++;
       } else {
         wrong++;
-        const fmt = (n: string, v: number, u: string, lo: number | null, hi: number | null) => `${n} | ${v} ${u} | ${lo ?? '-'} .. ${hi ?? '-'}`;
+        const fmt = (n: string, v: number | null, u: string, lo: number | null, hi: number | null) => `${n} | ${v} ${u} | ${lo ?? '-'} .. ${hi ?? '-'}`;
         note({ what: 'wrong', line, expected: fmt(e.name, e.value, e.unit, e.ref_low, e.ref_high), got: fmt(row.name, row.value, row.unit, row.refLow, row.refHigh) });
       }
     }
