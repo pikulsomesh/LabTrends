@@ -2,10 +2,11 @@
   "expo": {
     "name": "LabTrends",
     "slug": "labtrends",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#E8E4FF",
         "foregroundImage": "./assets/android-icon-foreground.png",
